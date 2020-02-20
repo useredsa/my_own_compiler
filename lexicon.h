@@ -1,5 +1,9 @@
-#define             INTLITERAL      1
+
+#define             MAX_ID_LENGTH   16
+// Data Types
+#define             INT             1
 #define             STRING          2
+// Keywords
 #define             PROGRAM         3
 #define             FUNCTION        4
 #define             CONST           5
@@ -16,6 +20,7 @@
 #define             TO              16
 #define             WRITE           17
 #define             READ            18
+// Operators
 #define             ID              19
 #define             SEMICOLON       20
 #define             COLON           21
@@ -29,4 +34,3 @@
 #define             RBRACKET        29
 #define             ASSIGNOP        30
 
-#define             MAX_ID_LENGTH   16
