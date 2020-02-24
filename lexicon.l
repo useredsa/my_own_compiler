@@ -4,7 +4,9 @@ int check_id_size();
 void unfinished_string();
 int check_integer();
 void lexical_error();
+int numErrors = 0;
 int literalSize = 0;
+const int MAX_STRING_LITERAL_SIZE = 1<<7; // 7Kb
 %}
 
 %option yylineno
@@ -18,27 +20,29 @@ integer             {digit}+
 
 [ \n\t]+                            ;
 {integer}                           {
-    									long long val = atoll(yytext);
-    									if (val >= (1LL<<31) || val < -(1LL<<31)) {
-        									printf("%d: WARNING: Integer constant out of range\n", yylineno);
-    									}
-    									return INT;
-									}
+                                        long long val = atoll(yytext);
+                                        if (val >= (1LL<<31) || val < -(1LL<<31)) {
+                                            printf("%d: WARNING: Integer constant out of range\n", yylineno);
+                                            numErrors++;
+                                        }
+                                        return INT;
+                                    }
  /* \"([^"\n]|\\\")*\"                  return STRING; */
  /* \"([^"\n]|\\\")*                    printf("%d: ERROR: Detected an unfinished string literal\n", yylineno); */
  /* Comments */
-"(*"								BEGIN(COMMENT_COND);
+"(*"                                BEGIN(COMMENT_COND);
 <COMMENT_COND>.                     ;
 <COMMENT_COND>"*)"                  BEGIN(INITIAL);
  /* Strings */
 \"                                  BEGIN(STRING_COND), literalSize = 0, yymore(); 
-<STRING_COND>([^"]|\\\")            {
-										if (yyleng + 2 >= 1000) { //TODO change
-    										printf("%d: ERROR: String literal surpasses maximum size\n")
-										}
+<STRING_COND>([^\"\n]|\\\")         {
+                                        if (yyleng + 2 >= MAX_STRING_LITERAL_SIZE) {
+                                            printf("%d: ERROR: String literal surpasses maximum size\n", yylineno);
+                                            exit(-1);
+                                        }
                                         yymore();
                                     }
-<STRING_COND>\"                     return STRING;
+<STRING_COND>\"                     { BEGIN(INITIAL); return STRING; }
  /* Keywords */
 program                             return PROGRAM;
 function                            return FUNCTION;
@@ -70,7 +74,10 @@ read                                return READ;
 ":="                                return ASSIGNOP;
 ({letter}|_)({letter}|{digit}|_){0,15}    return ID;
 ({letter}|_)({letter}|{digit}|_){16,16}   return check_id_size();
-.                                   printf("\nERROR, unrecognized symbol %s\n", yytext);
+.                                   {
+                                        printf("\nERROR, unrecognized symbol %s\n", yytext);
+                                        numErrors++;
+                                    }
 %%
 
 int check_id_size() {
@@ -106,5 +113,9 @@ void main() {
   while (i=yylex())
     printf("%d %s\n", i, yytext);
   printf("END OF LEXICAL ANALYSIS\n");
+  if (numErrors > 0) {
+      return -1;
+  }
+  return 0;
 }
 
