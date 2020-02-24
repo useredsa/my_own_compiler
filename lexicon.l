@@ -1,9 +1,6 @@
 %{
 #include "lexicon.h"
 int check_id_size();
-void unfinished_string();
-int check_integer();
-void lexical_error();
 int numErrors = 0;
 int literalSize = 0;
 const int MAX_STRING_LITERAL_SIZE = 1<<7; // 7Kb
@@ -88,25 +85,6 @@ int check_id_size() {
     return ID;
   }
 }
-
-// void unfinished_string() {
-//   printf("\nERROR, unfinished string in line %d", yylineno);
-// }
-
-// int check_integer() {
-//   // ¿Cómo reconocer enteros de más de 64 bits?
-//   long long ll = atol(yytext);
-//   if (abs(ll) > (1<<31)) {
-//     printf("\nERROR, oversized integer %lld", ll);
-//     return 0;
-//   } else {
-//     return INTLITERAL;
-//   }
-// }
-
-// void lexical_error() {
-//   printf("\nERROR, unrecognized symbol %s\n", yytext);
-// }
 
 void main() {
   int i;
