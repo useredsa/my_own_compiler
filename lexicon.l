@@ -2,31 +2,30 @@
 #include "lexicon.h"
 int check_id_size();
 int numErrors = 0;
+int numWarnings = 0;
 int literalSize = 0;
+int lineStart = 0;
 const int MAX_STRING_LITERAL_SIZE = 1<<7; // 7Kb
-                                    //TODO One-line comments
-                                    //TODO Detect and ignore line breaks
-                                    //TODO Detect non-closed comment with EOF
-                                    //TODO Detect and treat line breaks
-                                    //TODO Detect unrecognized symbol sequences
 %}
 
 %option yylineno
 digit               [0-9]
 letter              [a-zA-Z]
 integer             {digit}+
+unrecognized        [^0-9a-zA-Z()".,:;=+\-*/\\ \t\r\n]
 %x STRING_COND
 %x COMMENT_COND
+%x INLINE_COMM_COND
 %x LARGE_ID_COND
 
 %%
 
-[ \n\t]+                            ;
+[ \t\r\n]+                            ;
 {integer}                           {
                                         long long val = atoll(yytext);
                                         if (val >= (1LL<<31) || val < -(1LL<<31)) {
                                             printf("%d: WARNING: Integer literal out of range\n", yylineno);
-                                            numErrors++;
+                                            numWarnings++;
                                         }
                                         return INT;
                                     }
@@ -34,14 +33,29 @@ integer             {digit}+
  /* \"([^"\n]|\\\")*                    printf("%d: ERROR: Detected an unfinished string literal\n", yylineno); */
 
  /* Comments */
-"(*"                                BEGIN(COMMENT_COND);
-<COMMENT_COND>.                     ;
+"//"                                BEGIN(INLINE_COMM_COND);
+<INLINE_COMM_COND>.                 ;
+<INLINE_COMM_COND>"\n"              BEGIN(INITIAL);
+"(*"                                lineStart = yylineno, BEGIN(COMMENT_COND);
+<COMMENT_COND><<EOF>>               {
+                                      numErrors++;
+                                      printf("%d: ERROR: Unclosed comment starting on line: %d\n", yylineno, lineStart);
+                                      BEGIN(INITIAL);
+                                    }
+<COMMENT_COND>(.|\n)                ;
 <COMMENT_COND>"*)"                  BEGIN(INITIAL);
 
  /* Strings */
 \"                                  BEGIN(STRING_COND), literalSize = 0, yymore(); 
+<STRING_COND>\n                     {
+                                      numErrors++;
+                                      printf("%d: ERROR: Unclosed string.", yylineno);
+                                      BEGIN(INITIAL);
+                                      return STRING;
+                                    }
 <STRING_COND>([^\"\n]|\\\")         {
                                       if (yyleng + 2 >= MAX_STRING_LITERAL_SIZE) {
+                                        numErrors++;
                                         printf("%d: ERROR: String literal surpasses maximum size\n", yylineno);
                                         exit(-1);
                                       }
@@ -81,18 +95,19 @@ read                                return READ;
 ":="                                return ASSIGNOP;
 
 ({letter}|_)({letter}|{digit}|_){0,15}    return ID;
-({letter}|_)({letter}|{digit}|_){16,16}   yymore(), BEGIN(LARGE_ID_COND);
-<LARGE_ID_COND>({letter}|{digit}|_)       ;
-<LARGE_ID_COND>.                          {
-                                            yyless(17);
-                                            printf("%d: ERROR: oversized identifier (using: %s)\n", yylineno, yytext);
-                                            BEGIN(INITIAL);
+({letter}|_)({letter}|{digit}|_){16,16}   {
+                                            numErrors++;
+                                            yyless(16);
+                                            printf("%d: ERROR: oversized identifier (using: %15s)\n", yylineno, yytext);
+                                            BEGIN(LARGE_ID_COND);
                                             return ID;
                                           }
-.                                   {
-                                      printf("\nERROR, unrecognized symbol %s\n", yytext);
-                                      numErrors++;
-                                    } 
+<LARGE_ID_COND>({letter}|{digit}|_)       ;
+<LARGE_ID_COND>.                          { yyless(1); BEGIN(INITIAL); }
+{unrecognized}+                           {
+                                            numErrors++;
+                                            printf("%d: ERROR: unrecognized symbols %s\n", yylineno, yytext);
+                                          } 
 %%
 
 int main() {
@@ -101,11 +116,12 @@ int main() {
     //TODO Print errors with the format:
     //  ERROR: *error_description* in line *line*[: *lexeme*]
     // print lexeme when error_description is related to ID, INT or unrecognized symbol
-    printf("Lexeme: %s\t; [token: %s]\n", yytext, int_to_lexeme(i));
+    printf("Token: %s\t; [Lexeme: %s]\n", int_to_lexeme(i), yytext);
   }
   printf("END OF LEXICAL ANALYSIS\n");
-  if (numErrors > 0) {
-    fprintf(stderr, "Some errors were found\n");
+  if (numErrors || numWarnings) {
+    printf("\n--------------------\n\n");
+    fprintf(stderr, "COMPILATION PROBLEMS: %d errors %d warnings\n", numErrors, numWarnings);
     return -1;
   }
   return 0;
