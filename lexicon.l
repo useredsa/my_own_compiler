@@ -4,6 +4,11 @@ int check_id_size();
 int numErrors = 0;
 int literalSize = 0;
 const int MAX_STRING_LITERAL_SIZE = 1<<7; // 7Kb
+                                    //TODO One-line comments
+                                    //TODO Detect and ignore line breaks
+                                    //TODO Detect non-closed comment with EOF
+                                    //TODO Detect and treat line breaks
+                                    //TODO Detect unrecognized symbol sequences
 %}
 
 %option yylineno
@@ -12,6 +17,7 @@ letter              [a-zA-Z]
 integer             {digit}+
 %x STRING_COND
 %x COMMENT_COND
+%x LARGE_ID_COND
 
 %%
 
@@ -28,23 +34,19 @@ integer             {digit}+
  /* \"([^"\n]|\\\")*                    printf("%d: ERROR: Detected an unfinished string literal\n", yylineno); */
 
  /* Comments */
-                                    //TODO One-line comments
 "(*"                                BEGIN(COMMENT_COND);
 <COMMENT_COND>.                     ;
-                                    //TODO Detect and ignore line breaks
-                                    //TODO Detect non-closed comment with EOF
 <COMMENT_COND>"*)"                  BEGIN(INITIAL);
 
  /* Strings */
 \"                                  BEGIN(STRING_COND), literalSize = 0, yymore(); 
 <STRING_COND>([^\"\n]|\\\")         {
-                                        if (yyleng + 2 >= MAX_STRING_LITERAL_SIZE) {
-                                            printf("%d: ERROR: String literal surpasses maximum size\n", yylineno);
-                                            exit(-1);
-                                        }
-                                        yymore();
+                                      if (yyleng + 2 >= MAX_STRING_LITERAL_SIZE) {
+                                        printf("%d: ERROR: String literal surpasses maximum size\n", yylineno);
+                                        exit(-1);
+                                      }
+                                      yymore();
                                     }
-                                    //TODO Detect and treat line breaks
 <STRING_COND>\"                     { BEGIN(INITIAL); return STRING; }
 
  /* Keywords */
@@ -79,35 +81,32 @@ read                                return READ;
 ":="                                return ASSIGNOP;
 
 ({letter}|_)({letter}|{digit}|_){0,15}    return ID;
-({letter}|_)({letter}|{digit}|_){16,16}   return check_id_size(); //TODO Check id size here
+({letter}|_)({letter}|{digit}|_){16,16}   yymore(), BEGIN(LARGE_ID_COND);
+<LARGE_ID_COND>({letter}|{digit}|_)       ;
+<LARGE_ID_COND>.                          {
+                                            yyless(17);
+                                            printf("%d: ERROR: oversized identifier (using: %s)\n", yylineno, yytext);
+                                            BEGIN(INITIAL);
+                                            return ID;
+                                          }
 .                                   {
-                                        printf("\nERROR, unrecognized symbol %s\n", yytext);
-                                        numErrors++;
-                                    } //TODO Detect unrecognized symbol sequences
+                                      printf("\nERROR, unrecognized symbol %s\n", yytext);
+                                      numErrors++;
+                                    } 
 %%
 
-int check_id_size() { //TODO Continue reading the identifier until flex buffer overflows
-  if (yyleng > MAX_ID_LENGTH) { 
-    printf("\nERROR, oversized identifier %s", yytext);
-    return 0;
-  } else { //TODO We never enter here
-    return ID;
-  }
-}
-
-void main() {
+int main() {
   int i;
-  while (i=yylex())
-    //TODO Print things with the format:
-    //  Token: *name_of_token* ; [lexeme: *lexeme*]
-    // print lexeme when name_of_token is ID, INT or STRING
+  while (i=yylex()) {
     //TODO Print errors with the format:
     //  ERROR: *error_description* in line *line*[: *lexeme*]
     // print lexeme when error_description is related to ID, INT or unrecognized symbol
-    printf("%d %s\n", i, yytext);
+    printf("Lexeme: %s\t; [token: %s]\n", yytext, int_to_lexeme(i));
+  }
   printf("END OF LEXICAL ANALYSIS\n");
   if (numErrors > 0) {
-      return -1;
+    fprintf(stderr, "Some errors were found\n");
+    return -1;
   }
   return 0;
 }

@@ -1,3 +1,7 @@
+#ifndef LEXICON_H
+#define LEXICON_H
+
+#include <assert.h>
 
 #define             MAX_ID_LENGTH   16
 // Data Types
@@ -34,3 +38,43 @@
 #define             RBRACKET        29
 #define             ASSIGNOP        30
 
+const char* lexeme[] = {
+    "NULL",
+    "INT",
+    "STRING",
+    "PROGRAM",
+    "FUNCTION",
+    "CONST",
+    "VAR",
+    "INTEGER",
+    "BEGINN",
+    "END",
+    "IF",
+    "THEN",
+    "ELSE",
+    "WHILE",
+    "DO",
+    "FOR",
+    "TO",
+    "WRITE",
+    "READ",
+    "ID",
+    "SEMICOLON",
+    "COLON",
+    "DOT",
+    "COMMA",
+    "PLUSOP",
+    "MINUSOP",
+    "MULTOP",
+    "DIVOP",
+    "LBRACKET",
+    "RBRACKET",
+    "ASSIGNOP"
+};
+
+static const char* int_to_lexeme(const int id) {
+    assert(id < sizeof(lexeme) / sizeof(char*));
+    return lexeme[id];
+}
+
+#endif // LEXICON_H
