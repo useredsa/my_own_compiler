@@ -342,6 +342,9 @@ void yyfree ( void *  );
 #define YY_AT_BOL() (YY_CURRENT_BUFFER_LVALUE->yy_at_bol)
 
 /* Begin user sect3 */
+
+#define yywrap() (/*CONSTCOND*/1)
+#define YY_SKIP_YYWRAP
 typedef flex_uint8_t YY_CHAR;
 
 FILE *yyin = NULL, *yyout = NULL;
@@ -574,6 +577,7 @@ static int yy_more_len = 0;
 char *yytext;
 #line 1 "lexicon.l"
 #line 2 "lexicon.l"
+#include <stdarg.h>
 #include "lexicon.h"
 int check_id_size();
 int numErrors = 0;
@@ -581,9 +585,13 @@ int numWarnings = 0;
 int literalSize = 0;
 int lineStart = 0;
 const int MAX_STRING_LITERAL_SIZE = 1<<7; // 7Kb
-#line 585 "lexicon.c"
 
-#line 587 "lexicon.c"
+void logerr(char* fmt, ...);
+void logwar(char* fmt, ...);
+
+#line 593 "lexicon.c"
+
+#line 595 "lexicon.c"
 
 #define INITIAL 0
 #define STRING_COND 1
@@ -804,10 +812,10 @@ YY_DECL
 		}
 
 	{
-#line 21 "lexicon.l"
+#line 27 "lexicon.l"
 
 
-#line 811 "lexicon.c"
+#line 819 "lexicon.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -883,18 +891,16 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 23 "lexicon.l"
+#line 29 "lexicon.l"
 ;
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 24 "lexicon.l"
+#line 30 "lexicon.l"
 {
                                         long long val = atoll(yytext);
-                                        if (val >= (1LL<<31) || val < -(1LL<<31)) {
-                                            printf("%d: WARNING: Integer literal out of range\n", yylineno);
-                                            numWarnings++;
-                                        }
+                                        if (val >= (1LL<<31) || val < -(1LL<<31))
+                                            logwar("Integer literal out of range");
                                         return INT;
                                     }
 	YY_BREAK
@@ -903,68 +909,66 @@ YY_RULE_SETUP
 /* Comments */
 case 3:
 YY_RULE_SETUP
-#line 36 "lexicon.l"
+#line 40 "lexicon.l"
 BEGIN(INLINE_COMM_COND);
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 37 "lexicon.l"
+#line 41 "lexicon.l"
 ;
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 38 "lexicon.l"
+#line 42 "lexicon.l"
 BEGIN(INITIAL);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 39 "lexicon.l"
+#line 43 "lexicon.l"
 lineStart = yylineno, BEGIN(COMMENT_COND);
 	YY_BREAK
 case YY_STATE_EOF(COMMENT_COND):
-#line 40 "lexicon.l"
+#line 44 "lexicon.l"
 {
-                                      numErrors++;
-                                      printf("%d: ERROR: Unclosed comment starting on line: %d\n", yylineno, lineStart);
+                                      logerr("Unclosed comment starting on line: %d", lineStart);
                                       BEGIN(INITIAL);
                                     }
 	YY_BREAK
 case 7:
 /* rule 7 can match eol */
 YY_RULE_SETUP
-#line 45 "lexicon.l"
+#line 48 "lexicon.l"
 ;
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 46 "lexicon.l"
+#line 49 "lexicon.l"
 BEGIN(INITIAL);
 	YY_BREAK
 /* Strings */
 case 9:
 YY_RULE_SETUP
-#line 49 "lexicon.l"
+#line 52 "lexicon.l"
 BEGIN(STRING_COND), literalSize = 0, yymore(); 
 	YY_BREAK
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 50 "lexicon.l"
+#line 53 "lexicon.l"
 {
-                                      numErrors++;
-                                      printf("%d: ERROR: Unclosed string.", yylineno);
+                                      logerr("Unclosed String");
+                                      yyless(yyleng-1);
                                       BEGIN(INITIAL);
                                       return STRING;
                                     }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 56 "lexicon.l"
+#line 59 "lexicon.l"
 {
                                       if (yyleng + 2 >= MAX_STRING_LITERAL_SIZE) {
-                                        numErrors++;
-                                        printf("%d: ERROR: String literal surpasses maximum size\n", yylineno);
+                                        logerr("String literal surpasses maximum size");
                                         exit(-1);
                                       }
                                       yymore();
@@ -972,179 +976,175 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 64 "lexicon.l"
+#line 66 "lexicon.l"
 { BEGIN(INITIAL); return STRING; }
 	YY_BREAK
 /* Keywords */
 case 13:
 YY_RULE_SETUP
-#line 67 "lexicon.l"
+#line 69 "lexicon.l"
 return PROGRAM;
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 68 "lexicon.l"
+#line 70 "lexicon.l"
 return FUNCTION;
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 69 "lexicon.l"
+#line 71 "lexicon.l"
 return CONST;
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 70 "lexicon.l"
+#line 72 "lexicon.l"
 return VAR;
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 71 "lexicon.l"
+#line 73 "lexicon.l"
 return INTEGER;
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 72 "lexicon.l"
+#line 74 "lexicon.l"
 return BEGINN;
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 73 "lexicon.l"
+#line 75 "lexicon.l"
 return END;
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 74 "lexicon.l"
+#line 76 "lexicon.l"
 return IF;
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 75 "lexicon.l"
+#line 77 "lexicon.l"
 return THEN;
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 76 "lexicon.l"
+#line 78 "lexicon.l"
 return ELSE;
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 77 "lexicon.l"
+#line 79 "lexicon.l"
 return WHILE;
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 78 "lexicon.l"
+#line 80 "lexicon.l"
 return DO;
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 79 "lexicon.l"
+#line 81 "lexicon.l"
 return FOR;
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 80 "lexicon.l"
+#line 82 "lexicon.l"
 return TO;
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 81 "lexicon.l"
+#line 83 "lexicon.l"
 return WRITE;
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 82 "lexicon.l"
+#line 84 "lexicon.l"
 return READ;
 	YY_BREAK
 /* Operators */
 case 29:
 YY_RULE_SETUP
-#line 85 "lexicon.l"
-return SEMICOLON;
+#line 87 "lexicon.l"
+return SEMICOL;
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 86 "lexicon.l"
+#line 88 "lexicon.l"
 return COLON;
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 87 "lexicon.l"
+#line 89 "lexicon.l"
 return DOT;
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 88 "lexicon.l"
+#line 90 "lexicon.l"
 return COMMA;
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 89 "lexicon.l"
+#line 91 "lexicon.l"
 return PLUSOP;
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 90 "lexicon.l"
+#line 92 "lexicon.l"
 return MINUSOP;
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 91 "lexicon.l"
+#line 93 "lexicon.l"
 return MULTOP;
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 92 "lexicon.l"
+#line 94 "lexicon.l"
 return DIVOP;
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 93 "lexicon.l"
+#line 95 "lexicon.l"
 return LBRACKET;
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 94 "lexicon.l"
+#line 96 "lexicon.l"
 return RBRACKET;
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 95 "lexicon.l"
+#line 97 "lexicon.l"
 return ASSIGNOP;
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 97 "lexicon.l"
+#line 99 "lexicon.l"
 return ID;
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 98 "lexicon.l"
+#line 100 "lexicon.l"
 {
-                                            numErrors++;
                                             yyless(16);
-                                            printf("%d: ERROR: oversized identifier (using: %15s)\n", yylineno, yytext);
+                                            logerr("Oversized identifier (using: %15s)", yytext);
                                             BEGIN(LARGE_ID_COND);
                                             return ID;
                                           }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 105 "lexicon.l"
+#line 106 "lexicon.l"
 ;
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 106 "lexicon.l"
+#line 107 "lexicon.l"
 { yyless(1); BEGIN(INITIAL); }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 107 "lexicon.l"
-{
-                                            numErrors++;
-                                            printf("%d: ERROR: unrecognized symbols %s\n", yylineno, yytext);
-                                          } 
+#line 108 "lexicon.l"
+logerr("Unrecognized symbols %s", yytext);
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
@@ -2174,13 +2174,35 @@ void yyfree (void * ptr )
 #line 111 "lexicon.l"
 
 
+void logerr(char* fmt, ...) {
+    numErrors++;
+    va_list args;
+    va_start(args, fmt);
+
+    fprintf(stderr, "\n%d: ERROR: ", yylineno);
+    vfprintf(stderr, fmt, args);
+    fprintf(stderr, "\n\n");
+    va_end(args);
+}
+
+void logwar(char* fmt, ...) {
+    numWarnings++;
+    va_list args;
+    va_start(args, fmt);
+
+    fprintf(stderr, "\n%d: WARNING: ", yylineno);
+    vfprintf(stderr, fmt, args);
+    fprintf(stderr, "\n\n");
+    va_end(args);
+}
+
 int main() {
   int i;
   while (i=yylex()) {
     //TODO Print errors with the format:
     //  ERROR: *error_description* in line *line*[: *lexeme*]
     // print lexeme when error_description is related to ID, INT or unrecognized symbol
-    printf("Token: %s\t; [Lexeme: %s]\n", int_to_lexeme(i), yytext);
+    printf("Token: %s\t; Lexeme: `%s`\n", int_to_lexeme(i), yytext);
   }
   printf("END OF LEXICAL ANALYSIS\n");
   if (numErrors || numWarnings) {

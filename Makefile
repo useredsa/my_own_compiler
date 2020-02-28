@@ -2,7 +2,13 @@
 TARGET=bin/lexicon
 
 $(TARGET): lexicon.c lexicon.h
-	gcc lexicon.c -lfl -o $@
+	@if cat /etc/os-release | grep -q Fedora; then \
+		echo "Compiling with Fedora settings.";    \
+        gcc lexicon.c -o $@;                       \
+	else                                           \
+		echo "Compiling with Ubuntu settings.";    \
+        gcc lexicon.c -lfl -o $@;                  \
+	fi
 
 lexicon.c: lexicon.l lexicon.h
 	flex -o $@ lexicon.l
@@ -10,5 +16,5 @@ lexicon.c: lexicon.l lexicon.h
 clean:
 	rm -f $(TARGET) lexicon.c
 
-run: $(TARGET) examples/example_program.mp
-	./$(TARGET) <examples/example_program.mp
+run: $(TARGET) examples/example_program2.mp
+	./$(TARGET) <examples/example_program2.mp || true

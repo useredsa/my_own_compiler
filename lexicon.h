@@ -26,7 +26,7 @@
 #define             READ            18
 // Operators
 #define             ID              19
-#define             SEMICOLON       20
+#define             SEMICOL         20
 #define             COLON           21
 #define             DOT             22
 #define             COMMA           23
@@ -59,7 +59,7 @@ const char* lexeme[] = {
     "WRITE",
     "READ",
     "ID",
-    "SEMICOLON",
+    "SEMICOL",
     "COLON",
     "DOT",
     "COMMA",
