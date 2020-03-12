@@ -1,0 +1,6 @@
+# Cache from lsp
+.ccls-cache
+.ccls
+
+# binary
+bin/*

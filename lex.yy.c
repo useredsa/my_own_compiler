@@ -1,6 +1,5 @@
-#line 2 "lexicon.c"
 
-#line 4 "lexicon.c"
+#line 3 "lex.yy.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -578,7 +577,7 @@ char *yytext;
 #line 1 "lexicon.l"
 #line 2 "lexicon.l"
 #include <stdarg.h>
-#include "lexicon.h"
+#include "syntax.tab.h"
 int check_id_size();
 int numErrors = 0;
 int numWarnings = 0;
@@ -589,9 +588,9 @@ const int MAX_STRING_LITERAL_SIZE = 1<<7; // 7Kb
 void logerr(char* fmt, ...);
 void logwar(char* fmt, ...);
 
-#line 593 "lexicon.c"
+#line 592 "lex.yy.c"
 
-#line 595 "lexicon.c"
+#line 594 "lex.yy.c"
 
 #define INITIAL 0
 #define STRING_COND 1
@@ -815,7 +814,7 @@ YY_DECL
 #line 27 "lexicon.l"
 
 
-#line 819 "lexicon.c"
+#line 818 "lex.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -901,7 +900,7 @@ YY_RULE_SETUP
                                       long long val = atoll(yytext);
                                       if (val >= (1LL<<31) || val < -(1LL<<31))
                                         logwar("Integer literal out of range");
-                                      return INT;
+                                      return INTLIT;
                                     }
 	YY_BREAK
 /* \"([^"\n]|\\\")*\"                  return STRING; */
@@ -1151,7 +1150,7 @@ YY_RULE_SETUP
 #line 111 "lexicon.l"
 ECHO;
 	YY_BREAK
-#line 1155 "lexicon.c"
+#line 1154 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(STRING_COND):
 case YY_STATE_EOF(INLINE_COMM_COND):
@@ -2196,18 +2195,18 @@ void logwar(char* fmt, ...) {
     va_end(args);
 }
 
-int main() {
-  int i;
-  while (i=yylex()) {
-    printf("Token: %s\t; Lexeme: `%s`\n", int_to_lexeme(i), yytext);
-  }
-  printf("END OF LEXICAL ANALYSIS\n");
-  if (numErrors || numWarnings) {
-    printf("\n--------------------\n\n");
-    fprintf(stderr, "COMPILATION PROBLEMS: %d errors %d warnings\n", numErrors, numWarnings);
-    return -1;
-  }
-  return 0;
-}
+// int main() {
+//   int i;
+//   while (i=yylex()) {
+//     printf("Token: %s\t; Lexeme: `%s`\n", int_to_lexeme(i), yytext);
+//   }
+//   printf("END OF LEXICAL ANALYSIS\n");
+//   if (numErrors || numWarnings) {
+//     printf("\n--------------------\n\n");
+//     fprintf(stderr, "COMPILATION PROBLEMS: %d errors %d warnings\n", numErrors, numWarnings);
+//     return -1;
+//   }
+//   return 0;
+// }
 
 

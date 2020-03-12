@@ -1,30 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "lexico1.h"
+#include "syntax.tab.h"
 
-extern char *yytext;
-extern int  yyleng;
-extern FILE *yyin;
-extern int yylex();
-FILE *fich;
-int main(int argc, char *argv[])
-{
-    if (argc != 2) {
-        printf("Uso: %s fichero\n", argv[0]);
-        exit(2);
-    }
-    if ((fich = fopen(argv[1], "r")) == NULL) {
-        printf("%s: No se pudo abrir el archivo '%s'", argv[0], argv[1]);
-        exit(1);
-    }
+// extern File* yyin
+extern int yyparse();
 
-    int i;
-    yyin=fich;
-    while (i=yylex()) {
-        printf("TOKEN %d",i);
-        if(i==ID) printf("LEXEMA %s  LONGITUD %d\n",yytext,yyleng);
-        else printf("\n");}
-    fclose(fich);
-    return 0;
+int main(int argc, char* argv[]) {
+    if (yyparse()) {
+        printf("Syntactic error\n");
+    } else {
+        printf("Everthing OK!\n");
+    }
 }
 

@@ -1,6 +1,6 @@
 %{
 #include <stdarg.h>
-#include "lexicon.h"
+#include "syntax.tab.h"
 int check_id_size();
 int numErrors = 0;
 int numWarnings = 0;
@@ -31,7 +31,7 @@ unrecognized        [^0-9a-zA-Z()".,:;=+\-*/\\ \t\r\n]
                                       long long val = atoll(yytext);
                                       if (val >= (1LL<<31) || val < -(1LL<<31))
                                         logwar("Integer literal out of range");
-                                      return INT;
+                                      return INTLIT;
                                     }
  /* \"([^"\n]|\\\")*\"                  return STRING; */
  /* \"([^"\n]|\\\")*                    printf("%d: ERROR: Detected an unfinished string literal\n", yylineno); */
@@ -132,17 +132,17 @@ void logwar(char* fmt, ...) {
     va_end(args);
 }
 
-int main() {
-  int i;
-  while (i=yylex()) {
-    printf("Token: %s\t; Lexeme: `%s`\n", int_to_lexeme(i), yytext);
-  }
-  printf("END OF LEXICAL ANALYSIS\n");
-  if (numErrors || numWarnings) {
-    printf("\n--------------------\n\n");
-    fprintf(stderr, "COMPILATION PROBLEMS: %d errors %d warnings\n", numErrors, numWarnings);
-    return -1;
-  }
-  return 0;
-}
+// int main() {
+//   int i;
+//   while (i=yylex()) {
+//     printf("Token: %s\t; Lexeme: `%s`\n", int_to_lexeme(i), yytext);
+//   }
+//   printf("END OF LEXICAL ANALYSIS\n");
+//   if (numErrors || numWarnings) {
+//     printf("\n--------------------\n\n");
+//     fprintf(stderr, "COMPILATION PROBLEMS: %d errors %d warnings\n", numErrors, numWarnings);
+//     return -1;
+//   }
+//   return 0;
+// }
 

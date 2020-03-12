@@ -5,14 +5,14 @@
 
 #define             MAX_ID_LENGTH   16
 // Data Types
-#define             INT             1
+#define             INTEGER         1
 #define             STRING          2
 // Keywords
 #define             PROGRAM         3
 #define             FUNCTION        4
 #define             CONST           5
 #define             VAR             6
-#define             INTEGER         7
+#define             INTLIT          7
 #define             BEGINN          8
 #define             END             9
 #define             IF              10
