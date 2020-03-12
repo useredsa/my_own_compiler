@@ -26,12 +26,12 @@ unrecognized        [^0-9a-zA-Z()".,:;=+\-*/\\ \t\r\n]
 
 %%
 
-[ \t\r\n]+                            ;
+[ \t\r\n]+                          ;
 {integer}                           {
-                                        long long val = atoll(yytext);
-                                        if (val >= (1LL<<31) || val < -(1LL<<31))
-                                            logwar("Integer literal out of range");
-                                        return INT;
+                                      long long val = atoll(yytext);
+                                      if (val >= (1LL<<31) || val < -(1LL<<31))
+                                        logwar("Integer literal out of range");
+                                      return INT;
                                     }
  /* \"([^"\n]|\\\")*\"                  return STRING; */
  /* \"([^"\n]|\\\")*                    printf("%d: ERROR: Detected an unfinished string literal\n", yylineno); */

@@ -45,20 +45,33 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    PLUS = 258,
-    MINUS = 259,
-    MULT = 260,
-    DIV = 261,
-    LPAR = 262,
-    RPAR = 263,
-    SEMICOLON = 264,
-    INT = 265
+    EQUAL = 258,
+    PLUS = 259,
+    MINUS = 260,
+    MULT = 261,
+    DIV = 262,
+    LPAR = 263,
+    RPAR = 264,
+    SEMICOLON = 265,
+    REGISTER = 266,
+    INT = 267
   };
 #endif
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef int YYSTYPE;
+
+union YYSTYPE
+{
+#line 25 "calculator.y" /* yacc.c:1909  */
+
+    int num;
+    char* str;
+
+#line 72 "calculator.tab.h" /* yacc.c:1909  */
+};
+
+typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif

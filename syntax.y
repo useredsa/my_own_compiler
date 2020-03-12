@@ -6,14 +6,39 @@ extern int yylineno;
 int reg[10];
 %} /* Grammar tokens */
 
-%token EQUAL     "="
-%token PLUS      "+"
-%token MINUS     "-"
-%token MULT      "*"
-%token DIV       "/"
-%token LPAR      "("
-%token RPAR      ")"
-%token SEMICOLON ";"
+// Data Types
+%token INT       "int"
+%token STRING    "string"
+// Keywords
+%token PROGRAM   "program"
+%token FUNCTION  "function"
+%token CONST     "const"
+%token VAR       "var"
+%token INTEGER   "integer"
+%token BEGINN    "begin"
+%token END       "end"
+%token IF        "if"
+%token THEN      "then"
+%token ELSE      "else"
+%token WHILE     "while"
+%token DO        "do"
+%token FOR       "for"
+%token TO        "to"
+%token WRITE     "write"
+%token READ      "read"
+// Operators
+%token ID        "id"
+%token SEMICOL   ";"
+%token COLON     ":"
+%token DOT       "."
+%token COMMA     ","
+%token PLUSOP    "+"
+%token MINUSOP   "-"
+%token MULTOP    "*"
+%token DIVOP     "/"
+%token LBRACKET  "("
+%token RBRACKET  ")"
+%token ASSIGNOP  ":="
 %token <str> REGISTER  "register"
 %token <num> INT       "integer"
 
@@ -28,6 +53,7 @@ int reg[10];
 }
 
 %% /* Production Rules */
+
 
 sentence_block : result ";" sentence_block          {  }
                | assignment ";" sentence_block      {  }
