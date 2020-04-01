@@ -1,6 +1,13 @@
 %{
 #include <stdarg.h>
-#include "syntax.tab.h"
+#include <string>
+#include <vector>
+#include <unordered_map>
+using namespace std; //TODO remove
+
+#include "ast.hpp"
+#include "syntax.tab.hh"
+
 int check_id_size();
 int numErrors = 0;
 int numWarnings = 0;
@@ -8,8 +15,13 @@ int literalSize = 0;
 int lineStart = 0;
 const int MAX_STRING_LITERAL_SIZE = 1<<7; // 7Kb
 
-void logerr(char* fmt, ...);
-void logwar(char* fmt, ...);
+void logerr(const string& fmt, ...);
+void logwar(const string& fmt, ...);
+
+// Names dictionary
+unordered_map<string, int> id_lookup;
+vector<string> id_data;
+
 
 %}
 
@@ -31,6 +43,7 @@ unrecognized        [^0-9a-zA-Z()".,:;=+\-*/\\ \t\r\n]
                                       long long val = atoll(yytext);
                                       if (val >= (1LL<<31) || val < -(1LL<<31))
                                         logwar("Integer literal out of range");
+                                      yylval.intlit = val;
                                       return INTLIT;
                                     }
  /* \"([^"\n]|\\\")*\"                  return STRING; */
@@ -63,7 +76,13 @@ unrecognized        [^0-9a-zA-Z()".,:;=+\-*/\\ \t\r\n]
                                       }
                                       yymore();
                                     }
-<STRING_COND>\"                     { BEGIN(INITIAL); return STRING; }
+<STRING_COND>\"                     {
+                                      BEGIN(INITIAL);
+                                      //TODO remove " from buffer
+                                      //TODO translate \" into " (escape in general)
+                                      yylval.strlit = new string(yytext+1, yyleng-2);
+                                      return STRING;
+                                    }
 
  /* Keywords */
 program                             return PROGRAM;
@@ -96,7 +115,17 @@ read                                return READ;
 ")"                                 return RBRACKET;
 ":="                                return ASSIGNOP;
 
-({letter}|_)({letter}|{digit}|_){0,15}    return ID;
+({letter}|_)({letter}|{digit}|_){0,15}    {
+                                            string lexem = string(yytext, yyleng);
+                                            int id = id_lookup[lexem];
+                                            if (id == 0) {
+                                                id = id_data.size();
+                                                id_data.push_back(lexem);
+                                            }
+                                            yylval.raw_id = id;
+                                            return ID;
+                                          }
+
 ({letter}|_)({letter}|{digit}|_){16,16}   {
                                             yyless(16);
                                             logerr("Oversized identifier (using: %15s)", yytext);
@@ -110,26 +139,26 @@ read                                return READ;
 
 %%
 
-void logerr(char* fmt, ...) {
-    numErrors++;
-    va_list args;
-    va_start(args, fmt);
+void logerr(const string& fmt, ...) {
+    // numErrors++;
+    // va_list args;
+    // va_start(args, fmt);
 
-    fprintf(stderr, "\n%d: ERROR: ", yylineno);
-    vfprintf(stderr, fmt, args);
-    fprintf(stderr, "\n\n");
-    va_end(args);
+    // fprintf(stderr, "\n%d: ERROR: ", yylineno);
+    // vfprintf(stderr, fmt, args);
+    // fprintf(stderr, "\n\n");
+    // va_end(args);
 }
 
-void logwar(char* fmt, ...) {
-    numWarnings++;
-    va_list args;
-    va_start(args, fmt);
+void logwar(const string& fmt, ...) {
+    // numWarnings++;
+    // va_list args;
+    // va_start(args, fmt);
 
-    fprintf(stderr, "\n%d: WARNING: ", yylineno);
-    vfprintf(stderr, fmt, args);
-    fprintf(stderr, "\n\n");
-    va_end(args);
+    // fprintf(stderr, "\n%d: WARNING: ", yylineno);
+    // vfprintf(stderr, fmt, args);
+    // fprintf(stderr, "\n\n");
+    // va_end(args);
 }
 
 // int main() {

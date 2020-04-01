@@ -4,3 +4,7 @@
 
 # binary
 bin/*
+build/*
+*/syntax.tab*
+*/lexicon.*
+*/lex.yy.*
