@@ -1,12 +1,15 @@
 %{ /* Pre declarations */
-#include<iostream>
+#include <iostream>
+#include <string>
 #include "ast.hpp"
 using namespace std; //TODO remove
 
 extern int yylex();
 void yyerror(const char* msg);
 extern int yylineno;
-int reg[10];
+
+T_program ast_root;
+
 %} /* Grammar tokens */
 
 // Data Types
@@ -54,31 +57,38 @@ int reg[10];
 %start program
 %define parse.error verbose
 
-%type <intlit> "int_lit"
-%type <strlit> "str_lit"
-%type <func> function
-%type <funcs> functions
-%type <sttm> statement
-%type <sttms> statements
-%type <sttms> compound_statement
-%type <sttms> optional_statements
-%type <exp>     expression
-%type <exps>    expressions
+%type <intlit>     "int_lit"
+%type <strlit>     "str_lit"
+%type <func>       function
+%type <funcs>      functions
+%type <decls>      declarations
+%type <sttm>       statement
+%type <sttms>      statements
+%type <consts>     constants
+%type <sttms>      compound_statement
+%type <sttms>      optional_statements
+%type <exp>        expression
+%type <exps>       expressions
+%type <assig>      assignment
 %type <print_item> print_item
 %type <print_list> print_list
-%type <args> arguments
-%type <raw_id> "id"
-%type <ids> identifiers 
+%type <args>       arguments
+%type <raw_id>     "id"
+%type <id>         type;
+%type <ids>        identifiers 
 
 %union {
     int intlit;
-    string* strlit;
+    std::string* strlit;
     t_function* func;
     t_functions* funcs;
+    t_declarations* decls;
     t_statement* sttm;
     t_statements* sttms;
+    t_constants* consts;
     t_expression* exp;
     t_expressions* exps;
+    t_assignment* assig;
     t_print_item* print_item;
     t_print_list* print_list;
     t_arguments* args;
@@ -90,9 +100,10 @@ int reg[10];
 %% /* Production Rules */
 
 program:
-    "program" "id" "(" ")" ";" functions
-    declarations compound_statement "." {
-        printf("program!\n");
+    "program" "id" "(" ")" ";"
+    functions declarations compound_statement "." {
+        ast_root = T_program($6, $7, $8);
+        cout << "program!\n";
     }
     ;
 
@@ -106,27 +117,33 @@ functions:
     }
     ;
 
-function       : "function" "id"  "("
-                 "const" "identifiers" ":" "type"
-                 ")" ":" "type"
-                 declarations
-                 compound_statement                 {  }
-               ;
+function: 
+    "function" "id"  "("
+    "const" "identifiers" ":" type
+    ")" ":" type
+    declarations
+    compound_statement {  }
+    ;
 
-declarations   : declarations
-                 "var" identifiers ":" type ";"
-               | declarations
-                 "const" constants ";"              {  }
-               |                                    {  }
-               ;
+declarations:
+    declarations "var" identifiers ":" type ";" {
+        $$->add_identifiers($3, $5);
+        // free($3);
+    }
+    |
+    declarations "const" constants ";" {
+        $$->add_constants($3);
+        // free($3);
+    }
+    |
+    {
+        $$ = new t_declarations();
+    }
+    ;
 
 compound_statement:
     "begin" optional_statements "end" {
         $$ = $2;
-    }
-    |
-    {
-        $$ = new t_statements();
     }
     ;
 
@@ -139,6 +156,7 @@ optional_statements:
         $$ = new t_statements();
     }
     ;
+
 statements:
     statements ";" statement {
         $$ = $1;
@@ -152,26 +170,26 @@ statements:
     ;
 
 statement:
-    "id" ":=" expression {
-        
+    assignment {
+        $$ = $1;
     }
     |
     "if" expression "then" statement {
-        
+        $$ = &auxiliar;
     }
     |
     "if" expression "then" statement
     "else" statement {
-        
+        $$ = &auxiliar;
     }
     |
     "while" expression "do" statement {
-        
+        $$ = &auxiliar;
     }
     |
     "for" "id" ":=" expression "to"
     expression "do" statement {
-        
+        $$ = &auxiliar;
     }
     |
     "write" "(" print_list ")" {
@@ -179,16 +197,22 @@ statement:
             cout << print_item->str_val() << ' ';
         }
         cout << endl;
+        $$ = &auxiliar;
     }
     |
     "read"  "(" read_list  ")" {
-        
+        $$ = &auxiliar;
     }
     |
     compound_statement {
-        
+        $$ = &auxiliar;
     }
     ;
+
+assignment:
+    "id" ":=" expression {
+        $$ = new t_assignment(new t_id($1), $3);
+    }
 
 expressions:
     expressions "," expression {
@@ -204,27 +228,22 @@ expressions:
 expression:
     expression "+" expression {
         $$ = new t_binary_op(t_binary_op::valid_op::plus, $1, $3);
-        //TODO cout << $1->val() << " + " << $3->val() << " = " << $$->val() << endl;
     }
     |
     expression "-" expression {
         $$ = new t_binary_op(t_binary_op::valid_op::minus, $1, $3);
-        //TODO cout << $1->val() << " - " << $3->val() << " = " << $$->val() << endl;
     }
     |
     expression "*" expression {
         $$ = new t_binary_op(t_binary_op::valid_op::asterisk, $1, $3);
-        //TODO cout << $1->val() << " * " << $3->val() << " = " << $$->val() << endl;
     }
     |
     expression "/" expression {
         $$ = new t_binary_op(t_binary_op::valid_op::slash, $1, $3);
-        //TODO cout << $1->val() << " / " << $3->val() << " = " << $$->val() << endl;
     }
     |
     "-" expression %prec UMINUS {
         $$ = new t_unary_op(t_unary_op::valid_op::minus, $2);
-        //TODO cout << " - " << $2->val() << " = " << $$->val() << endl;
     }
     |
     "(" expression ")" {
@@ -266,23 +285,24 @@ identifiers:
 
 type:
     "integer" {
-
+        $$ = &t_builtin_types::integer;
     }
     ;
 
 constants:
-    constants "," "id" ":=" expression {
-        
+    constants "," assignment {
+        $$->push_back($3); //TODO asignación?
     }
     |
-    "id" ":=" expression {
-
+    assignment {
+        $$ = new t_constants();
+        $$->push_back($1);
     }
     ;
 
 print_list:
     print_list "," print_item {
-        $1->push_back($3);
+        $$->push_back($3);
     }
     |
     print_item {

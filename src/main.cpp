@@ -5,6 +5,7 @@
 
 // extern File* yyin
 extern int yyparse();
+extern T_program ast_root;
 
 int main(int argc, char* argv[]) {
     if (yyparse()) {
@@ -12,5 +13,7 @@ int main(int argc, char* argv[]) {
     } else {
         printf("Everthing OK!\n");
     }
+
+    ast_root.print();
 }
 

@@ -1,0 +1,1263 @@
+Rules useless in parser due to conflicts
+
+   11 optional_statements: %empty
+
+
+State 16 conflicts: 1 reduce/reduce
+State 82 conflicts: 1 shift/reduce
+
+
+Grammar
+
+    0 $accept: program $end
+
+    1 program: "program" "id" "(" ")" ";" functions declarations compound_statement "."
+
+    2 functions: functions function ";"
+    3          | %empty
+
+    4 function: "function" "id" "(" "const" "identifiers" ":" type ")" ":" type declarations compound_statement
+
+    5 declarations: declarations "var" identifiers ":" type ";"
+    6             | declarations "const" constants ";"
+    7             | %empty
+
+    8 compound_statement: "begin" optional_statements "end"
+    9                   | %empty
+
+   10 optional_statements: statements
+   11                    | %empty
+
+   12 statements: statements ";" statement
+   13           | statement
+
+   14 statement: assignment
+   15          | "if" expression "then" statement
+   16          | "if" expression "then" statement "else" statement
+   17          | "while" expression "do" statement
+   18          | "for" "id" ":=" expression "to" expression "do" statement
+   19          | "write" "(" print_list ")"
+   20          | "read" "(" read_list ")"
+   21          | compound_statement
+
+   22 assignment: "id" ":=" expression
+
+   23 expressions: expressions "," expression
+   24            | expression
+
+   25 expression: expression "+" expression
+   26           | expression "-" expression
+   27           | expression "*" expression
+   28           | expression "/" expression
+   29           | "-" expression
+   30           | "(" expression ")"
+   31           | "id"
+   32           | "int_lit"
+   33           | "id" "(" arguments ")"
+
+   34 arguments: expressions
+   35          | %empty
+
+   36 identifiers: identifiers "," "id"
+   37            | "id"
+
+   38 type: "integer"
+
+   39 constants: constants "," assignment
+   40          | assignment
+
+   41 print_list: print_list "," print_item
+   42           | print_item
+
+   43 print_item: expression
+   44           | "str_lit"
+
+   45 read_list: read_list "," read_item
+   46          | read_item
+
+   47 read_item: "id"
+
+
+Terminals, with rules where they appear
+
+$end (0) 0
+error (256)
+"integer" (258) 38
+"int_lit" (259) 32
+"str_lit" (260) 44
+"program" (261) 1
+"function" (262) 4
+"const" (263) 4 6
+"var" (264) 5
+"begin" (265) 8
+"end" (266) 8
+"if" (267) 15 16
+"then" (268) 15 16
+"else" (269) 16
+"while" (270) 17
+"do" (271) 17 18
+"for" (272) 18
+"to" (273) 18
+"write" (274) 19
+"read" (275) 20
+"id" (276) 1 4 18 22 31 33 36 37 47
+";" (277) 1 2 5 6 12
+":" (278) 4 5
+"." (279) 1
+"," (280) 23 36 39 41 45
+"+" (281) 25
+"-" (282) 26 29
+"*" (283) 27
+"/" (284) 28
+"(" (285) 1 4 19 20 30 33
+")" (286) 1 4 19 20 30 33
+":=" (287) 18 22
+UMINUS (288)
+"identifiers" (289) 4
+
+
+Nonterminals, with rules where they appear
+
+$accept (35)
+    on left: 0
+program (36)
+    on left: 1, on right: 0
+functions (37)
+    on left: 2 3, on right: 1 2
+function (38)
+    on left: 4, on right: 2
+declarations (39)
+    on left: 5 6 7, on right: 1 4 5 6
+compound_statement (40)
+    on left: 8 9, on right: 1 4 21
+optional_statements (41)
+    on left: 10 11, on right: 8
+statements (42)
+    on left: 12 13, on right: 10 12
+statement (43)
+    on left: 14 15 16 17 18 19 20 21, on right: 12 13 15 16 17 18
+assignment (44)
+    on left: 22, on right: 14 39 40
+expressions (45)
+    on left: 23 24, on right: 23 34
+expression (46)
+    on left: 25 26 27 28 29 30 31 32 33, on right: 15 16 17 18 22 23
+    24 25 26 27 28 29 30 43
+arguments (47)
+    on left: 34 35, on right: 33
+identifiers (48)
+    on left: 36 37, on right: 5 36
+type (49)
+    on left: 38, on right: 4 5
+constants (50)
+    on left: 39 40, on right: 6 39
+print_list (51)
+    on left: 41 42, on right: 19 41
+print_item (52)
+    on left: 43 44, on right: 41 42
+read_list (53)
+    on left: 45 46, on right: 20 45
+read_item (54)
+    on left: 47, on right: 45 46
+
+
+State 0
+
+    0 $accept: . program $end
+
+    "program"  shift, and go to state 1
+
+    program  go to state 2
+
+
+State 1
+
+    1 program: "program" . "id" "(" ")" ";" functions declarations compound_statement "."
+
+    "id"  shift, and go to state 3
+
+
+State 2
+
+    0 $accept: program . $end
+
+    $end  shift, and go to state 4
+
+
+State 3
+
+    1 program: "program" "id" . "(" ")" ";" functions declarations compound_statement "."
+
+    "("  shift, and go to state 5
+
+
+State 4
+
+    0 $accept: program $end .
+
+    $default  accept
+
+
+State 5
+
+    1 program: "program" "id" "(" . ")" ";" functions declarations compound_statement "."
+
+    ")"  shift, and go to state 6
+
+
+State 6
+
+    1 program: "program" "id" "(" ")" . ";" functions declarations compound_statement "."
+
+    ";"  shift, and go to state 7
+
+
+State 7
+
+    1 program: "program" "id" "(" ")" ";" . functions declarations compound_statement "."
+
+    $default  reduce using rule 3 (functions)
+
+    functions  go to state 8
+
+
+State 8
+
+    1 program: "program" "id" "(" ")" ";" functions . declarations compound_statement "."
+    2 functions: functions . function ";"
+
+    "function"  shift, and go to state 9
+
+    $default  reduce using rule 7 (declarations)
+
+    function      go to state 10
+    declarations  go to state 11
+
+
+State 9
+
+    4 function: "function" . "id" "(" "const" "identifiers" ":" type ")" ":" type declarations compound_statement
+
+    "id"  shift, and go to state 12
+
+
+State 10
+
+    2 functions: functions function . ";"
+
+    ";"  shift, and go to state 13
+
+
+State 11
+
+    1 program: "program" "id" "(" ")" ";" functions declarations . compound_statement "."
+    5 declarations: declarations . "var" identifiers ":" type ";"
+    6             | declarations . "const" constants ";"
+
+    "const"  shift, and go to state 14
+    "var"    shift, and go to state 15
+    "begin"  shift, and go to state 16
+
+    $default  reduce using rule 9 (compound_statement)
+
+    compound_statement  go to state 17
+
+
+State 12
+
+    4 function: "function" "id" . "(" "const" "identifiers" ":" type ")" ":" type declarations compound_statement
+
+    "("  shift, and go to state 18
+
+
+State 13
+
+    2 functions: functions function ";" .
+
+    $default  reduce using rule 2 (functions)
+
+
+State 14
+
+    6 declarations: declarations "const" . constants ";"
+
+    "id"  shift, and go to state 19
+
+    assignment  go to state 20
+    constants   go to state 21
+
+
+State 15
+
+    5 declarations: declarations "var" . identifiers ":" type ";"
+
+    "id"  shift, and go to state 22
+
+    identifiers  go to state 23
+
+
+State 16
+
+    8 compound_statement: "begin" . optional_statements "end"
+
+    "begin"  shift, and go to state 16
+    "if"     shift, and go to state 24
+    "while"  shift, and go to state 25
+    "for"    shift, and go to state 26
+    "write"  shift, and go to state 27
+    "read"   shift, and go to state 28
+    "id"     shift, and go to state 19
+
+    "end"     reduce using rule 9 (compound_statement)
+    "end"     [reduce using rule 11 (optional_statements)]
+    $default  reduce using rule 9 (compound_statement)
+
+    compound_statement   go to state 29
+    optional_statements  go to state 30
+    statements           go to state 31
+    statement            go to state 32
+    assignment           go to state 33
+
+
+State 17
+
+    1 program: "program" "id" "(" ")" ";" functions declarations compound_statement . "."
+
+    "."  shift, and go to state 34
+
+
+State 18
+
+    4 function: "function" "id" "(" . "const" "identifiers" ":" type ")" ":" type declarations compound_statement
+
+    "const"  shift, and go to state 35
+
+
+State 19
+
+   22 assignment: "id" . ":=" expression
+
+    ":="  shift, and go to state 36
+
+
+State 20
+
+   40 constants: assignment .
+
+    $default  reduce using rule 40 (constants)
+
+
+State 21
+
+    6 declarations: declarations "const" constants . ";"
+   39 constants: constants . "," assignment
+
+    ";"  shift, and go to state 37
+    ","  shift, and go to state 38
+
+
+State 22
+
+   37 identifiers: "id" .
+
+    $default  reduce using rule 37 (identifiers)
+
+
+State 23
+
+    5 declarations: declarations "var" identifiers . ":" type ";"
+   36 identifiers: identifiers . "," "id"
+
+    ":"  shift, and go to state 39
+    ","  shift, and go to state 40
+
+
+State 24
+
+   15 statement: "if" . expression "then" statement
+   16          | "if" . expression "then" statement "else" statement
+
+    "int_lit"  shift, and go to state 41
+    "id"       shift, and go to state 42
+    "-"        shift, and go to state 43
+    "("        shift, and go to state 44
+
+    expression  go to state 45
+
+
+State 25
+
+   17 statement: "while" . expression "do" statement
+
+    "int_lit"  shift, and go to state 41
+    "id"       shift, and go to state 42
+    "-"        shift, and go to state 43
+    "("        shift, and go to state 44
+
+    expression  go to state 46
+
+
+State 26
+
+   18 statement: "for" . "id" ":=" expression "to" expression "do" statement
+
+    "id"  shift, and go to state 47
+
+
+State 27
+
+   19 statement: "write" . "(" print_list ")"
+
+    "("  shift, and go to state 48
+
+
+State 28
+
+   20 statement: "read" . "(" read_list ")"
+
+    "("  shift, and go to state 49
+
+
+State 29
+
+   21 statement: compound_statement .
+
+    $default  reduce using rule 21 (statement)
+
+
+State 30
+
+    8 compound_statement: "begin" optional_statements . "end"
+
+    "end"  shift, and go to state 50
+
+
+State 31
+
+   10 optional_statements: statements .
+   12 statements: statements . ";" statement
+
+    ";"  shift, and go to state 51
+
+    $default  reduce using rule 10 (optional_statements)
+
+
+State 32
+
+   13 statements: statement .
+
+    $default  reduce using rule 13 (statements)
+
+
+State 33
+
+   14 statement: assignment .
+
+    $default  reduce using rule 14 (statement)
+
+
+State 34
+
+    1 program: "program" "id" "(" ")" ";" functions declarations compound_statement "." .
+
+    $default  reduce using rule 1 (program)
+
+
+State 35
+
+    4 function: "function" "id" "(" "const" . "identifiers" ":" type ")" ":" type declarations compound_statement
+
+    "identifiers"  shift, and go to state 52
+
+
+State 36
+
+   22 assignment: "id" ":=" . expression
+
+    "int_lit"  shift, and go to state 41
+    "id"       shift, and go to state 42
+    "-"        shift, and go to state 43
+    "("        shift, and go to state 44
+
+    expression  go to state 53
+
+
+State 37
+
+    6 declarations: declarations "const" constants ";" .
+
+    $default  reduce using rule 6 (declarations)
+
+
+State 38
+
+   39 constants: constants "," . assignment
+
+    "id"  shift, and go to state 19
+
+    assignment  go to state 54
+
+
+State 39
+
+    5 declarations: declarations "var" identifiers ":" . type ";"
+
+    "integer"  shift, and go to state 55
+
+    type  go to state 56
+
+
+State 40
+
+   36 identifiers: identifiers "," . "id"
+
+    "id"  shift, and go to state 57
+
+
+State 41
+
+   32 expression: "int_lit" .
+
+    $default  reduce using rule 32 (expression)
+
+
+State 42
+
+   31 expression: "id" .
+   33           | "id" . "(" arguments ")"
+
+    "("  shift, and go to state 58
+
+    $default  reduce using rule 31 (expression)
+
+
+State 43
+
+   29 expression: "-" . expression
+
+    "int_lit"  shift, and go to state 41
+    "id"       shift, and go to state 42
+    "-"        shift, and go to state 43
+    "("        shift, and go to state 44
+
+    expression  go to state 59
+
+
+State 44
+
+   30 expression: "(" . expression ")"
+
+    "int_lit"  shift, and go to state 41
+    "id"       shift, and go to state 42
+    "-"        shift, and go to state 43
+    "("        shift, and go to state 44
+
+    expression  go to state 60
+
+
+State 45
+
+   15 statement: "if" expression . "then" statement
+   16          | "if" expression . "then" statement "else" statement
+   25 expression: expression . "+" expression
+   26           | expression . "-" expression
+   27           | expression . "*" expression
+   28           | expression . "/" expression
+
+    "then"  shift, and go to state 61
+    "+"     shift, and go to state 62
+    "-"     shift, and go to state 63
+    "*"     shift, and go to state 64
+    "/"     shift, and go to state 65
+
+
+State 46
+
+   17 statement: "while" expression . "do" statement
+   25 expression: expression . "+" expression
+   26           | expression . "-" expression
+   27           | expression . "*" expression
+   28           | expression . "/" expression
+
+    "do"  shift, and go to state 66
+    "+"   shift, and go to state 62
+    "-"   shift, and go to state 63
+    "*"   shift, and go to state 64
+    "/"   shift, and go to state 65
+
+
+State 47
+
+   18 statement: "for" "id" . ":=" expression "to" expression "do" statement
+
+    ":="  shift, and go to state 67
+
+
+State 48
+
+   19 statement: "write" "(" . print_list ")"
+
+    "int_lit"  shift, and go to state 41
+    "str_lit"  shift, and go to state 68
+    "id"       shift, and go to state 42
+    "-"        shift, and go to state 43
+    "("        shift, and go to state 44
+
+    expression  go to state 69
+    print_list  go to state 70
+    print_item  go to state 71
+
+
+State 49
+
+   20 statement: "read" "(" . read_list ")"
+
+    "id"  shift, and go to state 72
+
+    read_list  go to state 73
+    read_item  go to state 74
+
+
+State 50
+
+    8 compound_statement: "begin" optional_statements "end" .
+
+    $default  reduce using rule 8 (compound_statement)
+
+
+State 51
+
+   12 statements: statements ";" . statement
+
+    "begin"  shift, and go to state 16
+    "if"     shift, and go to state 24
+    "while"  shift, and go to state 25
+    "for"    shift, and go to state 26
+    "write"  shift, and go to state 27
+    "read"   shift, and go to state 28
+    "id"     shift, and go to state 19
+
+    $default  reduce using rule 9 (compound_statement)
+
+    compound_statement  go to state 29
+    statement           go to state 75
+    assignment          go to state 33
+
+
+State 52
+
+    4 function: "function" "id" "(" "const" "identifiers" . ":" type ")" ":" type declarations compound_statement
+
+    ":"  shift, and go to state 76
+
+
+State 53
+
+   22 assignment: "id" ":=" expression .
+   25 expression: expression . "+" expression
+   26           | expression . "-" expression
+   27           | expression . "*" expression
+   28           | expression . "/" expression
+
+    "+"  shift, and go to state 62
+    "-"  shift, and go to state 63
+    "*"  shift, and go to state 64
+    "/"  shift, and go to state 65
+
+    $default  reduce using rule 22 (assignment)
+
+
+State 54
+
+   39 constants: constants "," assignment .
+
+    $default  reduce using rule 39 (constants)
+
+
+State 55
+
+   38 type: "integer" .
+
+    $default  reduce using rule 38 (type)
+
+
+State 56
+
+    5 declarations: declarations "var" identifiers ":" type . ";"
+
+    ";"  shift, and go to state 77
+
+
+State 57
+
+   36 identifiers: identifiers "," "id" .
+
+    $default  reduce using rule 36 (identifiers)
+
+
+State 58
+
+   33 expression: "id" "(" . arguments ")"
+
+    "int_lit"  shift, and go to state 41
+    "id"       shift, and go to state 42
+    "-"        shift, and go to state 43
+    "("        shift, and go to state 44
+
+    $default  reduce using rule 35 (arguments)
+
+    expressions  go to state 78
+    expression   go to state 79
+    arguments    go to state 80
+
+
+State 59
+
+   25 expression: expression . "+" expression
+   26           | expression . "-" expression
+   27           | expression . "*" expression
+   28           | expression . "/" expression
+   29           | "-" expression .
+
+    $default  reduce using rule 29 (expression)
+
+
+State 60
+
+   25 expression: expression . "+" expression
+   26           | expression . "-" expression
+   27           | expression . "*" expression
+   28           | expression . "/" expression
+   30           | "(" expression . ")"
+
+    "+"  shift, and go to state 62
+    "-"  shift, and go to state 63
+    "*"  shift, and go to state 64
+    "/"  shift, and go to state 65
+    ")"  shift, and go to state 81
+
+
+State 61
+
+   15 statement: "if" expression "then" . statement
+   16          | "if" expression "then" . statement "else" statement
+
+    "begin"  shift, and go to state 16
+    "if"     shift, and go to state 24
+    "while"  shift, and go to state 25
+    "for"    shift, and go to state 26
+    "write"  shift, and go to state 27
+    "read"   shift, and go to state 28
+    "id"     shift, and go to state 19
+
+    $default  reduce using rule 9 (compound_statement)
+
+    compound_statement  go to state 29
+    statement           go to state 82
+    assignment          go to state 33
+
+
+State 62
+
+   25 expression: expression "+" . expression
+
+    "int_lit"  shift, and go to state 41
+    "id"       shift, and go to state 42
+    "-"        shift, and go to state 43
+    "("        shift, and go to state 44
+
+    expression  go to state 83
+
+
+State 63
+
+   26 expression: expression "-" . expression
+
+    "int_lit"  shift, and go to state 41
+    "id"       shift, and go to state 42
+    "-"        shift, and go to state 43
+    "("        shift, and go to state 44
+
+    expression  go to state 84
+
+
+State 64
+
+   27 expression: expression "*" . expression
+
+    "int_lit"  shift, and go to state 41
+    "id"       shift, and go to state 42
+    "-"        shift, and go to state 43
+    "("        shift, and go to state 44
+
+    expression  go to state 85
+
+
+State 65
+
+   28 expression: expression "/" . expression
+
+    "int_lit"  shift, and go to state 41
+    "id"       shift, and go to state 42
+    "-"        shift, and go to state 43
+    "("        shift, and go to state 44
+
+    expression  go to state 86
+
+
+State 66
+
+   17 statement: "while" expression "do" . statement
+
+    "begin"  shift, and go to state 16
+    "if"     shift, and go to state 24
+    "while"  shift, and go to state 25
+    "for"    shift, and go to state 26
+    "write"  shift, and go to state 27
+    "read"   shift, and go to state 28
+    "id"     shift, and go to state 19
+
+    $default  reduce using rule 9 (compound_statement)
+
+    compound_statement  go to state 29
+    statement           go to state 87
+    assignment          go to state 33
+
+
+State 67
+
+   18 statement: "for" "id" ":=" . expression "to" expression "do" statement
+
+    "int_lit"  shift, and go to state 41
+    "id"       shift, and go to state 42
+    "-"        shift, and go to state 43
+    "("        shift, and go to state 44
+
+    expression  go to state 88
+
+
+State 68
+
+   44 print_item: "str_lit" .
+
+    $default  reduce using rule 44 (print_item)
+
+
+State 69
+
+   25 expression: expression . "+" expression
+   26           | expression . "-" expression
+   27           | expression . "*" expression
+   28           | expression . "/" expression
+   43 print_item: expression .
+
+    "+"  shift, and go to state 62
+    "-"  shift, and go to state 63
+    "*"  shift, and go to state 64
+    "/"  shift, and go to state 65
+
+    $default  reduce using rule 43 (print_item)
+
+
+State 70
+
+   19 statement: "write" "(" print_list . ")"
+   41 print_list: print_list . "," print_item
+
+    ","  shift, and go to state 89
+    ")"  shift, and go to state 90
+
+
+State 71
+
+   42 print_list: print_item .
+
+    $default  reduce using rule 42 (print_list)
+
+
+State 72
+
+   47 read_item: "id" .
+
+    $default  reduce using rule 47 (read_item)
+
+
+State 73
+
+   20 statement: "read" "(" read_list . ")"
+   45 read_list: read_list . "," read_item
+
+    ","  shift, and go to state 91
+    ")"  shift, and go to state 92
+
+
+State 74
+
+   46 read_list: read_item .
+
+    $default  reduce using rule 46 (read_list)
+
+
+State 75
+
+   12 statements: statements ";" statement .
+
+    $default  reduce using rule 12 (statements)
+
+
+State 76
+
+    4 function: "function" "id" "(" "const" "identifiers" ":" . type ")" ":" type declarations compound_statement
+
+    "integer"  shift, and go to state 55
+
+    type  go to state 93
+
+
+State 77
+
+    5 declarations: declarations "var" identifiers ":" type ";" .
+
+    $default  reduce using rule 5 (declarations)
+
+
+State 78
+
+   23 expressions: expressions . "," expression
+   34 arguments: expressions .
+
+    ","  shift, and go to state 94
+
+    $default  reduce using rule 34 (arguments)
+
+
+State 79
+
+   24 expressions: expression .
+   25 expression: expression . "+" expression
+   26           | expression . "-" expression
+   27           | expression . "*" expression
+   28           | expression . "/" expression
+
+    "+"  shift, and go to state 62
+    "-"  shift, and go to state 63
+    "*"  shift, and go to state 64
+    "/"  shift, and go to state 65
+
+    $default  reduce using rule 24 (expressions)
+
+
+State 80
+
+   33 expression: "id" "(" arguments . ")"
+
+    ")"  shift, and go to state 95
+
+
+State 81
+
+   30 expression: "(" expression ")" .
+
+    $default  reduce using rule 30 (expression)
+
+
+State 82
+
+   15 statement: "if" expression "then" statement .
+   16          | "if" expression "then" statement . "else" statement
+
+    "else"  shift, and go to state 96
+
+    "else"    [reduce using rule 15 (statement)]
+    $default  reduce using rule 15 (statement)
+
+
+State 83
+
+   25 expression: expression . "+" expression
+   25           | expression "+" expression .
+   26           | expression . "-" expression
+   27           | expression . "*" expression
+   28           | expression . "/" expression
+
+    "*"  shift, and go to state 64
+    "/"  shift, and go to state 65
+
+    $default  reduce using rule 25 (expression)
+
+
+State 84
+
+   25 expression: expression . "+" expression
+   26           | expression . "-" expression
+   26           | expression "-" expression .
+   27           | expression . "*" expression
+   28           | expression . "/" expression
+
+    "*"  shift, and go to state 64
+    "/"  shift, and go to state 65
+
+    $default  reduce using rule 26 (expression)
+
+
+State 85
+
+   25 expression: expression . "+" expression
+   26           | expression . "-" expression
+   27           | expression . "*" expression
+   27           | expression "*" expression .
+   28           | expression . "/" expression
+
+    $default  reduce using rule 27 (expression)
+
+
+State 86
+
+   25 expression: expression . "+" expression
+   26           | expression . "-" expression
+   27           | expression . "*" expression
+   28           | expression . "/" expression
+   28           | expression "/" expression .
+
+    $default  reduce using rule 28 (expression)
+
+
+State 87
+
+   17 statement: "while" expression "do" statement .
+
+    $default  reduce using rule 17 (statement)
+
+
+State 88
+
+   18 statement: "for" "id" ":=" expression . "to" expression "do" statement
+   25 expression: expression . "+" expression
+   26           | expression . "-" expression
+   27           | expression . "*" expression
+   28           | expression . "/" expression
+
+    "to"  shift, and go to state 97
+    "+"   shift, and go to state 62
+    "-"   shift, and go to state 63
+    "*"   shift, and go to state 64
+    "/"   shift, and go to state 65
+
+
+State 89
+
+   41 print_list: print_list "," . print_item
+
+    "int_lit"  shift, and go to state 41
+    "str_lit"  shift, and go to state 68
+    "id"       shift, and go to state 42
+    "-"        shift, and go to state 43
+    "("        shift, and go to state 44
+
+    expression  go to state 69
+    print_item  go to state 98
+
+
+State 90
+
+   19 statement: "write" "(" print_list ")" .
+
+    $default  reduce using rule 19 (statement)
+
+
+State 91
+
+   45 read_list: read_list "," . read_item
+
+    "id"  shift, and go to state 72
+
+    read_item  go to state 99
+
+
+State 92
+
+   20 statement: "read" "(" read_list ")" .
+
+    $default  reduce using rule 20 (statement)
+
+
+State 93
+
+    4 function: "function" "id" "(" "const" "identifiers" ":" type . ")" ":" type declarations compound_statement
+
+    ")"  shift, and go to state 100
+
+
+State 94
+
+   23 expressions: expressions "," . expression
+
+    "int_lit"  shift, and go to state 41
+    "id"       shift, and go to state 42
+    "-"        shift, and go to state 43
+    "("        shift, and go to state 44
+
+    expression  go to state 101
+
+
+State 95
+
+   33 expression: "id" "(" arguments ")" .
+
+    $default  reduce using rule 33 (expression)
+
+
+State 96
+
+   16 statement: "if" expression "then" statement "else" . statement
+
+    "begin"  shift, and go to state 16
+    "if"     shift, and go to state 24
+    "while"  shift, and go to state 25
+    "for"    shift, and go to state 26
+    "write"  shift, and go to state 27
+    "read"   shift, and go to state 28
+    "id"     shift, and go to state 19
+
+    $default  reduce using rule 9 (compound_statement)
+
+    compound_statement  go to state 29
+    statement           go to state 102
+    assignment          go to state 33
+
+
+State 97
+
+   18 statement: "for" "id" ":=" expression "to" . expression "do" statement
+
+    "int_lit"  shift, and go to state 41
+    "id"       shift, and go to state 42
+    "-"        shift, and go to state 43
+    "("        shift, and go to state 44
+
+    expression  go to state 103
+
+
+State 98
+
+   41 print_list: print_list "," print_item .
+
+    $default  reduce using rule 41 (print_list)
+
+
+State 99
+
+   45 read_list: read_list "," read_item .
+
+    $default  reduce using rule 45 (read_list)
+
+
+State 100
+
+    4 function: "function" "id" "(" "const" "identifiers" ":" type ")" . ":" type declarations compound_statement
+
+    ":"  shift, and go to state 104
+
+
+State 101
+
+   23 expressions: expressions "," expression .
+   25 expression: expression . "+" expression
+   26           | expression . "-" expression
+   27           | expression . "*" expression
+   28           | expression . "/" expression
+
+    "+"  shift, and go to state 62
+    "-"  shift, and go to state 63
+    "*"  shift, and go to state 64
+    "/"  shift, and go to state 65
+
+    $default  reduce using rule 23 (expressions)
+
+
+State 102
+
+   16 statement: "if" expression "then" statement "else" statement .
+
+    $default  reduce using rule 16 (statement)
+
+
+State 103
+
+   18 statement: "for" "id" ":=" expression "to" expression . "do" statement
+   25 expression: expression . "+" expression
+   26           | expression . "-" expression
+   27           | expression . "*" expression
+   28           | expression . "/" expression
+
+    "do"  shift, and go to state 105
+    "+"   shift, and go to state 62
+    "-"   shift, and go to state 63
+    "*"   shift, and go to state 64
+    "/"   shift, and go to state 65
+
+
+State 104
+
+    4 function: "function" "id" "(" "const" "identifiers" ":" type ")" ":" . type declarations compound_statement
+
+    "integer"  shift, and go to state 55
+
+    type  go to state 106
+
+
+State 105
+
+   18 statement: "for" "id" ":=" expression "to" expression "do" . statement
+
+    "begin"  shift, and go to state 16
+    "if"     shift, and go to state 24
+    "while"  shift, and go to state 25
+    "for"    shift, and go to state 26
+    "write"  shift, and go to state 27
+    "read"   shift, and go to state 28
+    "id"     shift, and go to state 19
+
+    $default  reduce using rule 9 (compound_statement)
+
+    compound_statement  go to state 29
+    statement           go to state 107
+    assignment          go to state 33
+
+
+State 106
+
+    4 function: "function" "id" "(" "const" "identifiers" ":" type ")" ":" type . declarations compound_statement
+
+    $default  reduce using rule 7 (declarations)
+
+    declarations  go to state 108
+
+
+State 107
+
+   18 statement: "for" "id" ":=" expression "to" expression "do" statement .
+
+    $default  reduce using rule 18 (statement)
+
+
+State 108
+
+    4 function: "function" "id" "(" "const" "identifiers" ":" type ")" ":" type declarations . compound_statement
+    5 declarations: declarations . "var" identifiers ":" type ";"
+    6             | declarations . "const" constants ";"
+
+    "const"  shift, and go to state 14
+    "var"    shift, and go to state 15
+    "begin"  shift, and go to state 16
+
+    $default  reduce using rule 9 (compound_statement)
+
+    compound_statement  go to state 109
+
+
+State 109
+
+    4 function: "function" "id" "(" "const" "identifiers" ":" type ")" ":" type declarations compound_statement .
+
+    $default  reduce using rule 4 (function)

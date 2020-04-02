@@ -50,7 +50,7 @@ $(DEPDIR)/%.d: $(SRCDIR)/%.cpp
 
 .PHONY: clean cleandep
 
-$(TARGET): $(INCDIR)/syntax.tab.hh $(SRCDIR)/syntax.tab.cc lex.yy.c $(OBJS)
+$(TARGET): $(INCDIR)/ast.hpp $(INCDIR)/syntax.tab.hh $(SRCDIR)/syntax.tab.cc lex.yy.c $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INC) $(LDLIBS) $(SRCDIR)/syntax.tab.cc lex.yy.c $(OBJS) -o $(TARGET)
 
 clean:
@@ -65,7 +65,7 @@ lex.yy.c: lexicon.ll $(INCDIR)/syntax.tab.hh
 	flex $<
 
 $(SRCDIR)/syntax.tab.cc $(INCDIR)/syntax.tab.hh : syntax.yy $(SRCS)
-	bison --defines=$(INCDIR)/syntax.tab.hh -o $(SRCDIR)/syntax.tab.cc $<
+	bison -t --defines=$(INCDIR)/syntax.tab.hh -o $(SRCDIR)/syntax.tab.cc $<
 
 run : $(TARGET) examples/example_program.mp
 	./$(TARGET) <examples/example_program.mp

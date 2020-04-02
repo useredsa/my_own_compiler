@@ -5,6 +5,10 @@
 #include <vector>
 #include <iostream> //TODO remove
 
+
+using std::string;
+using std::cout;
+
 class t_print_item {
   public:
     virtual std::string str_val() = 0;
@@ -29,6 +33,7 @@ class t_expression : public t_print_item {
   public:
     // virtual int reg() = 0;
     virtual int val() = 0;
+    virtual void print(int lvl) = 0;
 
     std::string str_val() {
         return std::to_string(val());
@@ -49,6 +54,14 @@ class t_expressions {
     void push_back(t_expression* exp) {
         exps.push_back(exp);
     }
+
+    void print(int lvl) {
+        string tabs(lvl, '\t');
+        for (auto exp : exps) {
+            exp->print(lvl+1);
+            cout << '\n';
+        }
+    }
 };
 
 class t_unary_op : public t_expression {
@@ -65,6 +78,13 @@ class t_unary_op : public t_expression {
 
     int val() {
         return -exp->val();
+    }
+
+    void print(int lvl) {
+        cout << string(lvl, '\t') << "t_unary_op:\n";
+        cout << string(lvl+1, '\t') << "-\n";
+        exp->print(lvl+1);
+        cout << '\n';
     }
 };
 
@@ -98,6 +118,29 @@ class t_binary_op : public t_expression {
             return 0; //TODO
         }
     }
+
+    void print(int lvl) {
+        cout << string(lvl, '\t') << "t_binary_op:\n";
+        l->print(lvl+1);
+        cout << string(lvl+1, '\t');
+        switch (op) {
+          case plus:
+            cout << '+';
+            break;
+          case minus:
+            cout << '-';
+            break;
+          case asterisk:
+            cout << '*';
+            break;
+          case slash:
+            cout << '/';
+            break;
+        }
+        cout << '\n';
+        r->print(lvl+1);
+        cout << '\n';
+    }
 };
 
 class t_int_lit : public t_expression {
@@ -108,6 +151,10 @@ class t_int_lit : public t_expression {
 
     int val() {
         return lit;
+    }
+
+    void print(int lvl) {
+        cout << string(lvl, '\t') << "int_lit: " << lit << '\n';
     }
 };
 
@@ -121,11 +168,12 @@ class t_str_lit : public t_print_item {
     std::string str_val() {
         return *lit;
     }
+
+    void print(int lvl) {
+        cout << string(lvl, '\t') << "str_lit: " << lit << '\n';
+    }
 };
 
-//TODO Diría que hereda de expression pero necesitaría un valor val()
-//el valor val es solo para probar, evidentemente no se puede saber en tiempo
-// de compilación
 class t_id : public t_expression {
   private:
     int id;
@@ -139,10 +187,14 @@ class t_id : public t_expression {
         std::cerr << "assigned id " << id << " random value " << tmp << std::endl;
         return tmp;
     }
+
+    void print(int lvl) {
+        cout << string(lvl, '\t') << "id: " << id << ": " /*<< id_data[id]*/ << '\n'; //TODO
+    }
 };
 
-class t_program {
-    
+namespace t_builtin_types {
+     static t_id integer(-1); //TODO see correct way of initialization
 };
 
 class t_function {
@@ -157,15 +209,16 @@ using t_functions = std::vector<t_function*>;
 // };
 
 class t_compound_statement {
-    
+   //TODO Fusionar con statements? 
 };
 
 class t_optional_statements {
-    
+   //TODO Fusionar con statments? 
 };
 
 class t_statement {
-    
+  public:
+    virtual void print(int lvl) = 0;
 };
 
 using t_statements = std::vector<t_statement*>;
@@ -200,12 +253,21 @@ using t_read_list = std::vector<t_read_item*>;
 
 class t_assignment : public t_statement {
   private:
-    t_id *id;
-    t_expression *exp;
+    t_id* id;
+    t_expression* exp;
 
   public:
-    t_assignment(t_id *id, t_expression *exp) : id(id), exp(exp) {  }
+    t_assignment(t_id* id, t_expression* exp) : id(id), exp(exp) {  }
+
+    void print(int lvl) {
+        cout << string(lvl, '\t') << "assignment\n";
+        id->print(lvl+1);
+        exp->print(lvl+1);
+    }
 };
+
+//TODO only for testing
+static t_assignment auxiliar(new t_id(0), new t_id(0));
 
 using t_constants = std::vector<t_assignment*>;
 // class t_constants {
@@ -214,8 +276,58 @@ using t_constants = std::vector<t_assignment*>;
 
 class t_declarations {
   public:
-    t_constants* consts;
-    //TODO
+    std::vector<t_assignment*> constants;
+    std::vector<t_id*> variables;
+
+    t_declarations() : constants(), variables() {  }
+
+    void add_constants(t_constants* consts) {
+        constants.insert(constants.end(), consts->begin(), consts->end());
+    }
+
+    void add_identifiers(t_identifiers* ids, t_id* type) {
+        for (auto id : *ids) {
+            // register type in table
+        }
+        variables.insert(variables.end(), ids->begin(), ids->end());
+    }
+
+    void print(int lvl) {
+        string tabs = string(lvl, '\t');
+        cout << tabs << "declarations:\n";
+        cout << tabs << "\tconstants\n";
+        for (auto c : constants) {
+            c->print(lvl+1);
+        }
+        cout << tabs << "\tvariables\n";
+        for (auto v : variables) {
+            v->print(lvl+1);
+        }
+    }
+};
+
+class T_program {
+  public:
+    t_functions* functions;
+    t_declarations* declarations;
+    t_statements* statements;
+
+    T_program() {  }
+
+    T_program(t_functions* funcs, t_declarations* decls, t_statements* stmts)
+         : functions(funcs), declarations(decls), statements(stmts) {
+
+    }
+
+    void print(int lvl = 0) {
+        cout << "Program\n";
+        // functions->print(lvl+1);
+        declarations->print(lvl+1);
+        cout << "\n\tstatements:\n";
+        for (auto st : *statements) {
+            st->print(lvl+2);
+        }
+    }
 };
 
 
