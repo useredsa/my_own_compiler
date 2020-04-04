@@ -12,8 +12,7 @@ int main(int argc, char* argv[]) {
         printf("Syntactic error\n");
     } else {
         printf("Everthing OK!\n");
+        ast_root.print();
     }
-
-    ast_root.print();
 }
 

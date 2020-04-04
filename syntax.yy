@@ -65,7 +65,7 @@ T_program ast_root;
 %type <sttm>       statement
 %type <sttms>      statements
 %type <consts>     constants
-%type <sttms>      compound_statement
+%type <comp_sttm>  compound_statement
 %type <sttms>      optional_statements
 %type <exp>        expression
 %type <exps>       expressions
@@ -74,34 +74,34 @@ T_program ast_root;
 %type <print_list> print_list
 %type <args>       arguments
 %type <raw_id>     "id"
-%type <id>         type;
 %type <ids>        identifiers 
+%type <type>       type
 
 %union {
-    int intlit;
-    std::string* strlit;
-    t_function* func;
-    t_functions* funcs;
-    t_declarations* decls;
-    t_statement* sttm;
-    t_statements* sttms;
-    t_constants* consts;
-    t_expression* exp;
-    t_expressions* exps;
-    t_assignment* assig;
-    t_print_item* print_item;
-    t_print_list* print_list;
-    t_arguments* args;
-    int raw_id;
-    t_id* id;
-    t_identifiers* ids;
+    int                   intlit;
+    std::string*          strlit;
+    t_function*           func;
+    t_functions*          funcs;
+    t_declarations*       decls;
+    t_statement*          sttm;
+    t_statements*         sttms;
+    t_compound_statement* comp_sttm;
+    t_constants*          consts;
+    t_expression*         exp;
+    t_expressions*        exps;
+    t_assignment*         assig;
+    t_print_item*         print_item;
+    t_print_list*         print_list;
+    t_arguments*          args;
+    int                   raw_id;
+    t_identifiers*        ids;
+    t_type*               type;
 }
 
 %% /* Production Rules */
 
 program:
-    "program" "id" "(" ")" ";"
-    functions declarations compound_statement "." {
+    "program" "id" "(" ")" ";" functions declarations compound_statement "." {
         ast_root = T_program($6, $7, $8);
         cout << "program!\n";
     }
@@ -109,6 +109,7 @@ program:
 
 functions:
     functions function ";" {
+        $$ = $1;
         $$->push_back($2);
     }
     |
@@ -118,20 +119,22 @@ functions:
     ;
 
 function: 
-    "function" "id"  "("
-    "const" "identifiers" ":" type
-    ")" ":" type
+    "function" "id" "(" "const" identifiers ":" type ")" ":" type
     declarations
-    compound_statement {  }
+    compound_statement {
+        $$ = new t_function(new t_id($2), $5, $7, $10, $11, $12);
+    }
     ;
 
 declarations:
     declarations "var" identifiers ":" type ";" {
+        $$ = $1;
         $$->add_identifiers($3, $5);
         // free($3);
     }
     |
     declarations "const" constants ";" {
+        $$ = $1;
         $$->add_constants($3);
         // free($3);
     }
@@ -143,7 +146,7 @@ declarations:
 
 compound_statement:
     "begin" optional_statements "end" {
-        $$ = $2;
+        $$ = new t_compound_statement($2);
     }
     ;
 
@@ -153,7 +156,7 @@ optional_statements:
     }
     |
     {
-        $$ = new t_statements();
+        $$ = NULL;  //TODO
     }
     ;
 
@@ -175,21 +178,21 @@ statement:
     }
     |
     "if" expression "then" statement {
-        $$ = &auxiliar;
+        $$ = new t_if_then_statement($2, $4);
     }
     |
     "if" expression "then" statement
     "else" statement {
-        $$ = &auxiliar;
+        $$ = new t_if_then_else_statement($2, $4, $6);
     }
     |
     "while" expression "do" statement {
-        $$ = &auxiliar;
+        $$ = new t_while_statement($2, $4);
     }
     |
     "for" "id" ":=" expression "to"
     expression "do" statement {
-        $$ = &auxiliar;
+        $$ = new t_for_statement(new t_id($2), $4, $6, $8);
     }
     |
     "write" "(" print_list ")" {
@@ -205,7 +208,7 @@ statement:
     }
     |
     compound_statement {
-        $$ = &auxiliar;
+        $$ = $1;
     }
     ;
 
@@ -213,6 +216,7 @@ assignment:
     "id" ":=" expression {
         $$ = new t_assignment(new t_id($1), $3);
     }
+    ;
 
 expressions:
     expressions "," expression {
@@ -258,7 +262,7 @@ expression:
     }
     |
     "id" "(" arguments ")" {
-        
+        //TODO Comprobar que la función existe
     }
     ;
 
@@ -268,6 +272,7 @@ arguments:
     }
     |
     {
+        //TODO
         $$ = new t_arguments();
     }
     ;

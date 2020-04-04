@@ -11,8 +11,8 @@ using namespace std; //TODO remove
 int check_id_size();
 int numErrors = 0;
 int numWarnings = 0;
-int literalSize = 0;
 int lineStart = 0;
+string* strlit;
 const int MAX_STRING_LITERAL_SIZE = 1<<7; // 7Kb
 
 void logerr(const string& fmt, ...);
@@ -32,6 +32,7 @@ letter              [a-zA-Z]
 integer             {digit}+
 unrecognized        [^0-9a-zA-Z()".,:;=+\-*/\\ \t\r\n]
 %x STRING_COND
+%x STRING_ESCAPE_COND
 %x COMMENT_COND
 %x INLINE_COMM_COND
 %x LARGE_ID_COND
@@ -62,25 +63,43 @@ unrecognized        [^0-9a-zA-Z()".,:;=+\-*/\\ \t\r\n]
 <COMMENT_COND>"*)"                  BEGIN(INITIAL);
 
  /* Strings */
-\"                                  BEGIN(STRING_COND), literalSize = 0, yymore(); 
-<STRING_COND>\n                     {
+"\""                                {
+                                      strlit = new string();
+                                      yymore();  //TODO Esto supongo que ya no tiene sentido
+                                      BEGIN(STRING_COND);
+                                    }
+<STRING_COND>"\n"                   {
+                                      delete strlit;
                                       logerr("Unclosed String");
-                                      yyless(yyleng-1);
+                                      yyless(yyleng-1);  //TODO Esto supongo que sobra tambié
                                       BEGIN(INITIAL);
                                       return STRING;
                                     }
-<STRING_COND>([^\"\n]|\\\")         {
-                                      if (yyleng + 2 >= MAX_STRING_LITERAL_SIZE) {
+<STRING_COND>[^\"\n]                {
+                                      //TODO No recuerdo por qué era el "+ 2", así que he
+                                      //     dejado una comparación equivalente a la anterior
+                                      if (strlit->length() + yyleng + 2 >= MAX_STRING_LITERAL_SIZE) {
                                         logerr("String literal surpasses maximum size");
-                                        exit(-1);
+                                        exit(-1);  //TODO Seguir parseando?
                                       }
-                                      yymore();
+                                      if (yytext[yyleng-1] == '\\') {
+                                        strlit->append(yytext, yyleng-1);
+                                        BEGIN(STRING_ESCAPE_COND);
+                                      } else {
+                                        yymore();
+                                      }
                                     }
-<STRING_COND>\"                     {
+<STRING_ESCAPE_COND>"\\"            strlit->push_back('\\'), BEGIN(STRING_COND);
+<STRING_ESCAPE_COND>"\""            strlit->push_back('\"'), BEGIN(STRING_COND);
+<STRING_ESCAPE_COND>"t"             strlit->push_back('\t'), BEGIN(STRING_COND);
+<STRING_ESCAPE_COND>"r"             strlit->push_back('\r'), BEGIN(STRING_COND);
+<STRING_ESCAPE_COND>"n"             strlit->push_back('\n'), BEGIN(STRING_COND);
+ /*TODO He probado printf("\x") en C con varias letras y suele salir x*/
+<STRING_ESCAPE_COND>.               logerr("Unknown escape sequence"), BEGIN(STRING_COND);
+<STRING_COND>"\""                   {
+                                      strlit->append(yytext, yyleng-1);
+                                      yylval.strlit = strlit;
                                       BEGIN(INITIAL);
-                                      //TODO remove " from buffer
-                                      //TODO translate \" into " (escape in general)
-                                      yylval.strlit = new string(yytext+1, yyleng-2);
                                       return STRING;
                                     }
 
@@ -115,9 +134,10 @@ read                                return READ;
 ")"                                 return RBRACKET;
 ":="                                return ASSIGNOP;
 
+ /* Identifiers */
 ({letter}|_)({letter}|{digit}|_){0,15}    {
                                             string lexem = string(yytext, yyleng);
-                                            int id = id_lookup[lexem];
+                                            int& id = id_lookup[lexem];
                                             if (id == 0) {
                                                 id = id_data.size();
                                                 id_data.push_back(lexem);
@@ -128,12 +148,14 @@ read                                return READ;
 
 ({letter}|_)({letter}|{digit}|_){16,16}   {
                                             yyless(16);
-                                            logerr("Oversized identifier (using: %15s)", yytext);
+                                            logerr("Oversized identifier (using: %16s)", yytext);
                                             BEGIN(LARGE_ID_COND);
                                             return ID;
                                           }
 <LARGE_ID_COND>({letter}|{digit}|_)       ;
-<LARGE_ID_COND>.                          { yyless(1); BEGIN(INITIAL); }
+<LARGE_ID_COND>.                          { yyless(0); BEGIN(INITIAL); }
+
+ /*TODO Con ayuda de una condición, podemos protegernos de un overflow*/
 {unrecognized}+                           logerr("Unrecognized symbols %s", yytext);
 
 

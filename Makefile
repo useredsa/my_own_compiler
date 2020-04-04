@@ -59,8 +59,6 @@ clean:
 cleandep:
 	rm -f $(DEPS)
 
-
-
 lex.yy.c: lexicon.ll $(INCDIR)/syntax.tab.hh
 	flex $<
 
