@@ -1,5 +1,5 @@
 
-#line 2 "lex.yy.c"
+#line 3 "lex.yy.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -581,7 +581,6 @@ char *yytext;
 #include <stdarg.h>
 #include <string>
 #include <vector>
-#include <unordered_map>
 using namespace std; //TODO remove
 
 #include "ast.hpp"
@@ -597,14 +596,9 @@ const int MAX_STRING_LITERAL_SIZE = 1<<7; // 7Kb
 void logerr(const string& fmt, ...);
 void logwar(const string& fmt, ...);
 
-// Names dictionary
-unordered_map<string, int> id_lookup;
-vector<string> id_data;
+#line 600 "lex.yy.c"
 
-
-#line 605 "lex.yy.c"
-
-#line 607 "lex.yy.c"
+#line 602 "lex.yy.c"
 
 #define INITIAL 0
 #define STRING_COND 1
@@ -826,10 +820,10 @@ YY_DECL
 		}
 
 	{
-#line 40 "lexicon.ll"
+#line 34 "lexicon.ll"
 
 
-#line 832 "lex.yy.c"
+#line 827 "lex.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -905,12 +899,12 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 42 "lexicon.ll"
+#line 36 "lexicon.ll"
 ;
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 43 "lexicon.ll"
+#line 37 "lexicon.ll"
 {
                                       long long val = atoll(yytext);
                                       if (val >= (1LL<<31) || val < -(1LL<<31))
@@ -924,27 +918,27 @@ YY_RULE_SETUP
 /* Comments */
 case 3:
 YY_RULE_SETUP
-#line 54 "lexicon.ll"
+#line 48 "lexicon.ll"
 BEGIN(INLINE_COMM_COND);
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 55 "lexicon.ll"
+#line 49 "lexicon.ll"
 ;
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 56 "lexicon.ll"
+#line 50 "lexicon.ll"
 BEGIN(INITIAL);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 57 "lexicon.ll"
+#line 51 "lexicon.ll"
 lineStart = yylineno, BEGIN(COMMENT_COND);
 	YY_BREAK
 case YY_STATE_EOF(COMMENT_COND):
-#line 58 "lexicon.ll"
+#line 52 "lexicon.ll"
 {
                                       logerr("Unclosed comment starting on line: %d", lineStart);
                                       BEGIN(INITIAL);
@@ -953,18 +947,18 @@ case YY_STATE_EOF(COMMENT_COND):
 case 7:
 /* rule 7 can match eol */
 YY_RULE_SETUP
-#line 62 "lexicon.ll"
+#line 56 "lexicon.ll"
 ;
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 63 "lexicon.ll"
+#line 57 "lexicon.ll"
 BEGIN(INITIAL);
 	YY_BREAK
 /* Strings */
 case 9:
 YY_RULE_SETUP
-#line 66 "lexicon.ll"
+#line 60 "lexicon.ll"
 {
                                       strlit = new string();
                                       yymore();  //TODO Esto supongo que ya no tiene sentido
@@ -974,7 +968,7 @@ YY_RULE_SETUP
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 71 "lexicon.ll"
+#line 65 "lexicon.ll"
 {
                                       delete strlit;
                                       logerr("Unclosed String");
@@ -985,7 +979,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 78 "lexicon.ll"
+#line 72 "lexicon.ll"
 {
                                       //TODO No recuerdo por qué era el "+ 2", así que he
                                       //     dejado una comparación equivalente a la anterior
@@ -1003,38 +997,38 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 92 "lexicon.ll"
+#line 86 "lexicon.ll"
 strlit->push_back('\\'), BEGIN(STRING_COND);
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 93 "lexicon.ll"
+#line 87 "lexicon.ll"
 strlit->push_back('\"'), BEGIN(STRING_COND);
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 94 "lexicon.ll"
+#line 88 "lexicon.ll"
 strlit->push_back('\t'), BEGIN(STRING_COND);
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 95 "lexicon.ll"
+#line 89 "lexicon.ll"
 strlit->push_back('\r'), BEGIN(STRING_COND);
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 96 "lexicon.ll"
+#line 90 "lexicon.ll"
 strlit->push_back('\n'), BEGIN(STRING_COND);
 	YY_BREAK
 /*TODO He probado printf("\x") en C con varias letras y suele salir x*/
 case 17:
 YY_RULE_SETUP
-#line 98 "lexicon.ll"
+#line 92 "lexicon.ll"
 logerr("Unknown escape sequence"), BEGIN(STRING_COND);
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 99 "lexicon.ll"
+#line 93 "lexicon.ll"
 {
                                       strlit->append(yytext, yyleng-1);
                                       yylval.strlit = strlit;
@@ -1045,150 +1039,149 @@ YY_RULE_SETUP
 /* Keywords */
 case 19:
 YY_RULE_SETUP
-#line 107 "lexicon.ll"
+#line 101 "lexicon.ll"
 return PROGRAM;
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 108 "lexicon.ll"
+#line 102 "lexicon.ll"
 return FUNCTION;
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 109 "lexicon.ll"
+#line 103 "lexicon.ll"
 return CONST;
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 110 "lexicon.ll"
+#line 104 "lexicon.ll"
 return VAR;
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 111 "lexicon.ll"
+#line 105 "lexicon.ll"
 return INTEGER;
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 112 "lexicon.ll"
+#line 106 "lexicon.ll"
 return BEGINN;
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 113 "lexicon.ll"
+#line 107 "lexicon.ll"
 return END;
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 114 "lexicon.ll"
+#line 108 "lexicon.ll"
 return IF;
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 115 "lexicon.ll"
+#line 109 "lexicon.ll"
 return THEN;
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 116 "lexicon.ll"
+#line 110 "lexicon.ll"
 return ELSE;
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 117 "lexicon.ll"
+#line 111 "lexicon.ll"
 return WHILE;
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 118 "lexicon.ll"
+#line 112 "lexicon.ll"
 return DO;
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 119 "lexicon.ll"
+#line 113 "lexicon.ll"
 return FOR;
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 120 "lexicon.ll"
+#line 114 "lexicon.ll"
 return TO;
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 121 "lexicon.ll"
+#line 115 "lexicon.ll"
 return WRITE;
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 122 "lexicon.ll"
+#line 116 "lexicon.ll"
 return READ;
 	YY_BREAK
 /* Operators */
 case 35:
 YY_RULE_SETUP
-#line 125 "lexicon.ll"
+#line 119 "lexicon.ll"
 return SEMICOL;
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 126 "lexicon.ll"
+#line 120 "lexicon.ll"
 return COLON;
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 127 "lexicon.ll"
+#line 121 "lexicon.ll"
 return DOT;
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 128 "lexicon.ll"
+#line 122 "lexicon.ll"
 return COMMA;
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 129 "lexicon.ll"
+#line 123 "lexicon.ll"
 return PLUSOP;
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 130 "lexicon.ll"
+#line 124 "lexicon.ll"
 return MINUSOP;
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 131 "lexicon.ll"
+#line 125 "lexicon.ll"
 return MULTOP;
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 132 "lexicon.ll"
+#line 126 "lexicon.ll"
 return DIVOP;
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 133 "lexicon.ll"
+#line 127 "lexicon.ll"
 return LBRACKET;
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 134 "lexicon.ll"
+#line 128 "lexicon.ll"
 return RBRACKET;
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 135 "lexicon.ll"
+#line 129 "lexicon.ll"
 return ASSIGNOP;
 	YY_BREAK
 /* Identifiers */
 case 46:
 YY_RULE_SETUP
-#line 138 "lexicon.ll"
+#line 132 "lexicon.ll"
 {
                                             string lexem = string(yytext, yyleng);
-                                            int& id = id_lookup[lexem];
+                                            int& id = AST::id_lookup[lexem];
                                             if (id == 0) {
-                                                id = id_data.size();
-                                                id_data.push_back(lexem);
+                                                id = AST::id_register(lexem);
                                             }
                                             yylval.raw_id = id;
                                             return ID;
@@ -1196,7 +1189,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 149 "lexicon.ll"
+#line 142 "lexicon.ll"
 {
                                             yyless(16);
                                             logerr("Oversized identifier (using: %16s)", yytext);
@@ -1206,26 +1199,26 @@ YY_RULE_SETUP
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 155 "lexicon.ll"
+#line 148 "lexicon.ll"
 ;
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 156 "lexicon.ll"
+#line 149 "lexicon.ll"
 { yyless(0); BEGIN(INITIAL); }
 	YY_BREAK
 /*TODO Con ayuda de una condición, podemos protegernos de un overflow*/
 case 50:
 YY_RULE_SETUP
-#line 159 "lexicon.ll"
+#line 152 "lexicon.ll"
 logerr("Unrecognized symbols %s", yytext);
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 162 "lexicon.ll"
+#line 155 "lexicon.ll"
 ECHO;
 	YY_BREAK
-#line 1228 "lex.yy.c"
+#line 1222 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(STRING_COND):
 case YY_STATE_EOF(STRING_ESCAPE_COND):
@@ -2246,7 +2239,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 162 "lexicon.ll"
+#line 155 "lexicon.ll"
 
 
 void logerr(const string& fmt, ...) {

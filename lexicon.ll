@@ -2,7 +2,6 @@
 #include <stdarg.h>
 #include <string>
 #include <vector>
-#include <unordered_map>
 using namespace std; //TODO remove
 
 #include "ast.hpp"
@@ -17,11 +16,6 @@ const int MAX_STRING_LITERAL_SIZE = 1<<7; // 7Kb
 
 void logerr(const string& fmt, ...);
 void logwar(const string& fmt, ...);
-
-// Names dictionary
-unordered_map<string, int> id_lookup;
-vector<string> id_data;
-
 
 %}
 
@@ -137,10 +131,9 @@ read                                return READ;
  /* Identifiers */
 ({letter}|_)({letter}|{digit}|_){0,15}    {
                                             string lexem = string(yytext, yyleng);
-                                            int& id = id_lookup[lexem];
+                                            int& id = AST::id_lookup[lexem];
                                             if (id == 0) {
-                                                id = id_data.size();
-                                                id_data.push_back(lexem);
+                                                id = AST::id_register(lexem);
                                             }
                                             yylval.raw_id = id;
                                             return ID;

@@ -1,12 +1,15 @@
-(************************
- * Fichero de prueba nº 1
- ************************)
-
+(********************************
+ * Fichero de funcionalidad n 1 *
+ ********************************)
 program test1 ();
+
+var a : integer;
+
 begin
-    a := 2+3*5;
-    write("alberto", "la", "chupa");
-    write("2*3 = ", 2*3)
+    read(a);
+    write(a);
+    a := a + 1;
+    write(a)
 end.
 
 

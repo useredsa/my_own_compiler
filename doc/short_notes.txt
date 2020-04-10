@@ -1,0 +1,4 @@
+https://www.gnu.org/software/bison/manual/html_node/Precedence.html
+https://en.cppreference.com/w/cpp/language/operator_precedence
+https://panthema.net/2007/flex-bison-cpp-example/flex-bison-cpp-example-0.1.4/doxygen-html/index.html
+

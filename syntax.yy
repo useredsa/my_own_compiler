@@ -2,7 +2,9 @@
 #include <iostream>
 #include <string>
 #include "ast.hpp"
+#include "functions.hpp"
 using namespace std; //TODO remove
+using namespace AST;
 
 extern int yylex();
 void yyerror(const char* msg);
@@ -57,45 +59,49 @@ T_program ast_root;
 %start program
 %define parse.error verbose
 
-%type <intlit>     "int_lit"
-%type <strlit>     "str_lit"
-%type <func>       function
-%type <funcs>      functions
-%type <decls>      declarations
-%type <sttm>       statement
-%type <sttms>      statements
-%type <consts>     constants
-%type <comp_sttm>  compound_statement
-%type <sttms>      optional_statements
-%type <exp>        expression
-%type <exps>       expressions
-%type <assig>      assignment
-%type <print_item> print_item
-%type <print_list> print_list
-%type <args>       arguments
-%type <raw_id>     "id"
-%type <ids>        identifiers 
-%type <type>       type
+%type <intlit> "int_lit"
+%type <strlit> "str_lit"
+%type <func>   function
+%type <funcs>  functions
+%type <decls>  declarations
+%type <sttm>   statement
+%type <sttms>  statements
+%type <sttms>  compound_statement
+%type <consts> constants
+%type <sttms>  optional_statements
+%type <exp>    expression
+%type <exps>   expressions
+%type <assig>  assignment
+%type <exp>    print_item
+%type <exps>   print_list
+%type <id>     read_item
+%type <ids>    read_list
+%type <args>   arguments
+%type <raw_id> "id"
+%type <ids>    identifiers 
+%type <type>   type
+
+%code requires {
+    using namespace AST;
+}
 
 %union {
-    int                   intlit;
-    std::string*          strlit;
-    t_function*           func;
-    t_functions*          funcs;
-    t_declarations*       decls;
-    t_statement*          sttm;
-    t_statements*         sttms;
-    t_compound_statement* comp_sttm;
-    t_constants*          consts;
-    t_expression*         exp;
-    t_expressions*        exps;
-    t_assignment*         assig;
-    t_print_item*         print_item;
-    t_print_list*         print_list;
-    t_arguments*          args;
-    int                   raw_id;
-    t_identifiers*        ids;
-    t_type*               type;
+    int             intlit;
+    std::string*    strlit;
+    t_function*     func;
+    t_functions*    funcs;
+    t_declarations* decls;
+    t_statement*    sttm;
+    t_statements*   sttms;
+    t_constants*    consts;
+    t_expression*   exp;
+    t_expressions*  exps;
+    t_assignment*   assig;
+    t_arguments*    args;
+    int             raw_id;
+    t_id*           id;
+    t_identifiers*  ids;
+    t_type*         type;
 }
 
 %% /* Production Rules */
@@ -146,7 +152,7 @@ declarations:
 
 compound_statement:
     "begin" optional_statements "end" {
-        $$ = new t_compound_statement($2);
+        $$ = $2;
     }
     ;
 
@@ -196,15 +202,11 @@ statement:
     }
     |
     "write" "(" print_list ")" {
-        for (auto print_item : *($3)) {
-            cout << print_item->str_val() << ' ';
-        }
-        cout << endl;
-        $$ = &auxiliar;
+        $$ = new t_write($3);
     }
     |
     "read"  "(" read_list  ")" {
-        $$ = &auxiliar;
+        $$ = new t_read($3);
     }
     |
     compound_statement {
@@ -290,12 +292,13 @@ identifiers:
 
 type:
     "integer" {
-        $$ = &t_builtin_types::integer;
+        $$ = &builtin::integer;
     }
     ;
 
 constants:
     constants "," assignment {
+        $$ = $1;
         $$->push_back($3); //TODO asignación?
     }
     |
@@ -311,7 +314,7 @@ print_list:
     }
     |
     print_item {
-        $$ = new t_print_list();
+        $$ = new t_expressions();
         $$->push_back($1);
     }
     ;
@@ -326,13 +329,23 @@ print_item:
     }
     ;
 
-//TODO better do after llvm translation (read is not necessary to test everything)
-read_list      : read_list "," read_item            {  }
-               | read_item                          {  }
-               ;
+read_list:
+    read_list "," read_item {
+        $$ = $1;
+        $$->push_back($3);
+    }
+    |
+    read_item {
+        $$ = new t_identifiers();
+        $$->push_back($1);
+    }
+    ;
 
-read_item      : "id"                               {  }
-               ;
+read_item:
+    "id" {
+        $$ = new t_id($1);
+    }
+    ;
 
 %%
 
