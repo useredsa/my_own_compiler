@@ -5,7 +5,7 @@
 using namespace std; //TODO remove
 
 #include "ast.hpp"
-#include "syntax.tab.hh"
+#include "syntax.tab.hpp"
 
 int check_id_size();
 int numErrors = 0;

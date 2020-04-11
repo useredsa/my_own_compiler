@@ -1,17 +1,22 @@
+# A reasonably-general Makefile for a cpp project
+# Useful links:
+#    https://www.gnu.org/software/make/manual/html_node/Automatic-Variables.html
+#    https://www.gnu.org/software/make/manual/html_node/Implicit-Rules.html#Implicit-Rules
 #
-# 'make'        build executable file
-# 'make clean'  removes all .o and executable files
-# 'make cleandep' deletes all .d files
-#
+# Emilio Domínguez Sánchez - emilio.dominguezs@um.es
+# April 2020
 
+
+# Do not use make's built-in rules and variables
+# (this increases performance and avoids hard-to-debug behaviour);
+MAKEFLAGS += -rR
 ### Define according to folder structure ###
-INCDIR=include#	headers folder
-SRCDIR=src#		source folder/s and file extension
-BUILDDIR=build#	object files folder
-DEPDIR=build#	dependencies folder
-BINDIR=bin#		binaries folder
+INCD=include#	headers folder
+SRCD=src#		source folder/s and file extension
+BUILD=build#	build files folder (objects, dependencies, etc)
+BIND=bin#		binaries folder
 # define the main files
-TARGET=$(BINDIR)/mpc
+TARGET=$(BIND)/mpc
 
 #
 # This uses Suffix Replacement within a macro:
@@ -21,49 +26,57 @@ TARGET=$(BINDIR)/mpc
 # with the .o suffix
 #
 # define the C source files
-SRCS=$(shell find $(SRCDIR) -type f -name "*.cpp")
+SRCS=$(shell find $(SRCD) -type f -name "*.cpp")
 # define the C object files 
-OBJS=$(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SRCS:.cpp=.o))
+OBJS=$(patsubst $(SRCD)/%,$(BUILD)/%,$(SRCS:.cpp=.o))
 # define the auto-generated dependency files
-DEPS=$(patsubst $(SRCDIR)/%,$(DEPDIR)/%,$(SRCS:.cpp=.d))
+DEPS=$(patsubst $(SRCD)/%,$(BUILD)/%,$(SRCS:.cpp=.d))
 
 ### Define compiling process ###
 CXX=g++ # C compiler
-INC=-I $(INCDIR)
+INC=-I $(INCD)
 CXXFLAGS=-Wall -Werror -Wno-unused -std=c++17 # Compile-time flags
 LDLIBS=
-
-
 	
-# rule for .o files
-$(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
-	$(CXX) $(CXXFLAGS) $(INC) $(LDLIBS) -c $< -o $@
+
+$(TARGET): $(BUILD)/syntax.tab.cpp $(BUILD)/lex.yy.c $(OBJS)
+	$(CXX) $(CXXFLAGS) $(INC) $(LDLIBS) $^ -o $(TARGET)
 
 # rule to generate a dep file by using the C preprocessor
 # (see man cpp for details on the -MM and -MT options)
-$(DEPDIR)/%.d: $(SRCDIR)/%.cpp
-	@mkdir build 2>/dev/null
-	($(CXX) $(CXXFLAGS) $(INC) $(LDLIBS) $< -MM -MT $(@:.d=.o); echo '\t$(CXX) $(CXXFLAGS) $(INC) $(LDLIBS) -c $< -o $(@:.d=.o)';) >$@
+$(BUILD)/%.d: $(SRCD)/%.cpp
+	($(CXX) $(CXXFLAGS) $(INC) $(LDLIBS) $< -MM -MT $(@:.d=.o) && echo '\t$(CXX) $(CXXFLAGS) $(INC) $(LDLIBS) -c $< -o $(@:.d=.o)';) >$@
+
+# Files without auto detection of dependencies.
+
+# Compiles lexicon file into a single source file using flex. Uses the tokens defined
+# by the grammar file.
+$(BUILD)/lex.yy.c: lexicon.ll $(INCD)/syntax.tab.hpp
+	flex -o $@ $<
+
+# Compiles syntax file into a header file and a source file. The header file goes into
+# the include folder because it is used by the lexicon file.
+$(BUILD)/syntax.tab.cpp $(INCD)/syntax.tab.hpp: syntax.yy $(SRCD)/ast.cpp
+	bison -t -o $(BUILD)/syntax.tab.cpp --defines=$(INCD)/syntax.tab.hpp $<
+
+$(BUILD)/main.d: $(INCD)/syntax.tab.hpp
+
+
 
 # Include dependencies files
 -include $(DEPS)
 
 .PHONY: clean cleandep
 
-$(TARGET): $(INCDIR)/ast.hpp $(INCDIR)/syntax.tab.hh $(SRCDIR)/syntax.tab.cc lex.yy.c $(OBJS)
-	$(CXX) $(CXXFLAGS) $(INC) $(LDLIBS) $(SRCDIR)/syntax.tab.cc lex.yy.c $(OBJS) -o $(TARGET)
-
 clean:
-	rm -f $(TARGET) $(OBJS) $(INCDIR)/syntax.tab.hh $(SRCDIR)/syntax.tab.cc lex.yy.c
+	rm -f $(TARGET) $(OBJS) $(INCD)/syntax.tab.hpp $(BUILD)/syntax.tab.cpp $(BUILD)/lex.yy.c
 
 cleandep:
 	rm -f $(DEPS)
 
-lex.yy.c: lexicon.ll $(INCDIR)/syntax.tab.hh
-	flex $<
+run : $(TARGET) tests/example_program3.mp
+	./$(TARGET) < tests/example_program3.mp
+	llvm-as-6.0 < $(BIND)/a.llvm > $(BIND)/a.bc
+	clang $(BIND)/a.bc -o $(BIND)/a.out
+	./$(BIND)/a.out
 
-$(SRCDIR)/syntax.tab.cc $(INCDIR)/syntax.tab.hh : syntax.yy $(SRCS)
-	bison -t --defines=$(INCDIR)/syntax.tab.hh -o $(SRCDIR)/syntax.tab.cc $<
-
-run : $(TARGET) examples/example_program.mp
-	./$(TARGET) <examples/example_program.mp

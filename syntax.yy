@@ -2,7 +2,6 @@
 #include <iostream>
 #include <string>
 #include "ast.hpp"
-#include "functions.hpp"
 using namespace std; //TODO remove
 using namespace AST;
 

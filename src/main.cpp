@@ -2,7 +2,7 @@
 #include <fstream>
 #include <stdlib.h>
 #include "ast.hpp" //TODO remove, should be included below, but it isn't
-#include "syntax.tab.hh"
+#include "syntax.tab.hpp"
 using namespace std;
 
 // extern File* yyin
