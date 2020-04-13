@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include "ast.hpp"
+#include "builtin.hpp"
 using namespace std; //TODO remove
 using namespace AST;
 
@@ -50,6 +51,8 @@ T_program ast_root;
 // %token <str> REGISTER  "register"
 // %token <num> INT       "integer"
 
+// Solution to the "dangling else" problem
+%right "then" "else"
 // Operator precedence
 %left  "+" "-"
 %left  "*" "/"
@@ -73,14 +76,17 @@ T_program ast_root;
 %type <assig>  assignment
 %type <exp>    print_item
 %type <exps>   print_list
-%type <id>     read_item
-%type <ids>    read_list
+%type <name>   read_item
+%type <names>  read_list
 %type <args>   arguments
-%type <raw_id> "id"
-%type <ids>    identifiers 
+%type <id>     "id"
+%type <name>   name
+%type <names>  names 
 %type <type>   type
 
 %code requires {
+    #include <string>
+    #include "ast.hpp"
     using namespace AST;
 }
 
@@ -97,9 +103,9 @@ T_program ast_root;
     t_expressions*  exps;
     t_assignment*   assig;
     t_arguments*    args;
-    int             raw_id;
-    t_id*           id;
-    t_identifiers*  ids;
+    std::string*    id;
+    t_name*         name;
+    t_names*        names;
     t_type*         type;
 }
 
@@ -109,6 +115,10 @@ program:
     "program" "id" "(" ")" ";" functions declarations compound_statement "." {
         ast_root = T_program($6, $7, $8);
         cout << "program!\n";
+    }
+    |
+    error functions declarations compound_statement "." {
+        
     }
     ;
 
@@ -124,23 +134,27 @@ functions:
     ;
 
 function: 
-    "function" "id" "(" "const" identifiers ":" type ")" ":" type
+    "function" name "(" "const" names ":" type ")" ":" type
     declarations
     compound_statement {
-        $$ = new t_function(new t_id($2), $5, $7, $10, $11, $12);
+        $$ = new t_function($2, $5, $7, $10, $11, $12);
+    }
+    |
+    error declarations compound_statement {
+        
     }
     ;
 
 declarations:
-    declarations "var" identifiers ":" type ";" {
+    declarations "var" names ":" type ";" {
         $$ = $1;
         $$->add_identifiers($3, $5);
         // free($3);
     }
     |
     declarations "const" constants ";" {
-        $$ = $1;
-        $$->add_constants($3);
+        // $$ = $1;
+        // $$->add_constants($3);
         // free($3);
     }
     |
@@ -195,9 +209,9 @@ statement:
         $$ = new t_while_statement($2, $4);
     }
     |
-    "for" "id" ":=" expression "to"
+    "for" name ":=" expression "to"
     expression "do" statement {
-        $$ = new t_for_statement(new t_id($2), $4, $6, $8);
+        $$ = new t_for_statement($2, $4, $6, $8);
     }
     |
     "write" "(" print_list ")" {
@@ -214,8 +228,8 @@ statement:
     ;
 
 assignment:
-    "id" ":=" expression {
-        $$ = new t_assignment(new t_id($1), $3);
+    name ":=" expression {
+        $$ = new t_assignment($1, $3);
     }
     ;
 
@@ -254,16 +268,16 @@ expression:
     "(" expression ")" {
         $$ = $2;
     }
-    | "id" {
-        $$ = new t_id($1);
+    | name {
+        $$ = $1;
     }
     |
     "int_lit" {
         $$ = new t_int_lit($1);
     }
     |
-    "id" "(" arguments ")" {
-        //TODO Comprobar que la función existe
+    name "(" arguments ")" {
+        //TODO
     }
     ;
 
@@ -278,33 +292,33 @@ arguments:
     }
     ;
 
-identifiers:
-    identifiers "," "id" {
-        $$->push_back(new t_id($3));
+names:
+    names "," name {
+        $$->push_back($3);
     }
     |
-    "id" {
-        $$ = new t_identifiers();
-        $$->push_back(new t_id($1));
+    name {
+        $$ = new t_names();
+        $$->push_back($1);
     }
     ;
 
 type:
     "integer" {
-        $$ = &builtin::integer;
+        $$ = new builtin::t_int();
     }
     ;
 
 constants:
-    constants "," assignment {
-        $$ = $1;
-        $$->push_back($3); //TODO asignación?
-    }
-    |
-    assignment {
-        $$ = new t_constants();
-        $$->push_back($1);
-    }
+    // constants "," name ":=" expression {
+    //     $$ = $1;
+    //     $$->push_back($3); //TODO asignación?
+    // }
+    // |
+    // name ":=" expression {
+    //     $$ = new t_constants();
+    //     $$->push_back($1);
+    // }
     ;
 
 print_list:
@@ -335,14 +349,27 @@ read_list:
     }
     |
     read_item {
-        $$ = new t_identifiers();
+        $$ = new t_names();
         $$->push_back($1);
     }
     ;
 
-read_item:
+read_item: //TODO considerar quitar ya que está name
+    name {
+        $$ = $1;
+    }
+    ;
+
+// Additions to the grammar
+name:
     "id" {
-        $$ = new t_id($1);
+        int& id = name_lookup[*$1];
+        if (id == 0) {
+            name_register(*$1);
+        } else {
+            delete $1;
+        }
+        $$ = new t_name(id);
     }
     ;
 

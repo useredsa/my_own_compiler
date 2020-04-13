@@ -2,3 +2,34 @@ https://www.gnu.org/software/bison/manual/html_node/Precedence.html
 https://en.cppreference.com/w/cpp/language/operator_precedence
 https://panthema.net/2007/flex-bison-cpp-example/flex-bison-cpp-example-0.1.4/doxygen-html/index.html
 
+type no hereda de id porque no es una expresión ni se parece a una variable, aunque ambos
+  son nombre propios
+  - sugiero cambiar en el ast id por object
+  - object englobaría variables de tipos básicos, funciones, instancias de clases, etc
+
+las funciones tienen que hacer checqueo de el tipo de parámetros que se les pasa, lo que es un por culo
+  - Existen funciones internas (se traducen en instrucciones)
+  - y funciones a las que hay que llamar
+  - Se pueden abstraer los operadores como funciones, pero hay unos básicos
+  - Los operadores builtin podemos hacer que estén ya registrados
+  - 
+
+entender las diferencias:
+- tipos vs instancias de esos tipos
+- declaraciones vs implementaciones vs uso
+- 
+
+
+Modificaciones a la gramática:
+Añado name y type para tratar un id de forma diferente
+Me parece correcto entonces llamar id a un nombre cualquiera en todos sitios
+cambio el nombre de una regla para que identifiers pase a ser names, aunque no
+cambia la gramática
+
+
+DATOS
+DECLARACION/IMPLEMENTACION IDENTIFIER USE
+
+t_type                                t_id as a type reference
+t_function                 t_id       t_function_call
+t_var                                 t_id as a var reference

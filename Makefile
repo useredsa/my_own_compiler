@@ -2,6 +2,7 @@
 # Useful links:
 #    https://www.gnu.org/software/make/manual/html_node/Automatic-Variables.html
 #    https://www.gnu.org/software/make/manual/html_node/Implicit-Rules.html#Implicit-Rules
+#    http://make.mad-scientist.net/papers/advanced-auto-dependency-generation/
 #
 # Emilio Domínguez Sánchez - emilio.dominguezs@um.es
 # April 2020
@@ -56,7 +57,7 @@ $(BUILD)/lex.yy.c: lexicon.ll $(INCD)/syntax.tab.hpp
 
 # Compiles syntax file into a header file and a source file. The header file goes into
 # the include folder because it is used by the lexicon file.
-$(BUILD)/syntax.tab.cpp $(INCD)/syntax.tab.hpp: syntax.yy $(SRCD)/ast.cpp
+$(BUILD)/syntax.tab.cpp $(INCD)/syntax.tab.hpp: syntax.yy $(INCD)/ast.hpp $(INCD)/builtin.hpp
 	bison -t -o $(BUILD)/syntax.tab.cpp --defines=$(INCD)/syntax.tab.hpp $<
 
 $(BUILD)/main.d: $(INCD)/syntax.tab.hpp

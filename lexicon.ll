@@ -4,7 +4,7 @@
 #include <vector>
 using namespace std; //TODO remove
 
-#include "ast.hpp"
+// #include "ast.hpp" //TODO remove
 #include "syntax.tab.hpp"
 
 int check_id_size();
@@ -130,19 +130,15 @@ read                                return READ;
 
  /* Identifiers */
 ({letter}|_)({letter}|{digit}|_){0,15}    {
-                                            string lexem = string(yytext, yyleng);
-                                            int& id = AST::id_lookup[lexem];
-                                            if (id == 0) {
-                                                id = AST::id_register(lexem);
-                                            }
-                                            yylval.raw_id = id;
+                                            string* lexem = new string(yytext, yyleng);
+                                            yylval.id = lexem;
                                             return ID;
                                           }
 
 ({letter}|_)({letter}|{digit}|_){16,16}   {
                                             yyless(16);
                                             logerr("Oversized identifier (using: %16s)", yytext);
-                                            BEGIN(LARGE_ID_COND);
+                                            BEGIN(LARGE_ID_COND); //TODO devolver algo?
                                             return ID;
                                           }
 <LARGE_ID_COND>({letter}|{digit}|_)       ;

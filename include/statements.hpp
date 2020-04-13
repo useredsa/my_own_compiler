@@ -4,53 +4,11 @@
 #include <iostream>
 #include <string>
 #include <vector>
-
+#include "statement.hpp"
 #include "expressions.hpp"
 #include "identifiers.hpp"
 
 namespace AST {
-
-// class t_optional_statements {
-//    //TODO Fusionar con statments? 
-// };
-
-class t_statement {
-  public:
-    virtual void print(int lvl) = 0;
-
-    virtual void llvm_put(std::ostream& os, int& local_var_count) = 0;
-};
-
-class t_statements : public std::vector<t_statement*>, public t_statement {
-  public:
-    void llvm_put(std::ostream& os, int& local_var_count) {
-        //TODO
-    }
-
-    void print(int lvl) {
-        std::string tabs(lvl, '\t');
-        std::cout << tabs << "begin\n";
-        for (auto st : *this) {
-            st->print(lvl+1);
-        }
-        std::cout << tabs << "end\n";
-    }
-};
-// class t_statements {
-//    
-// };
-
-//TODO esto lo vamos a juntar con t_statements, no?
-// class t_compound_statement : public t_statement {
-//   private:
-//     t_statements *opt_statements;
-
-//   public:
-//     t_compound_statement(t_statements *opt_stmts)
-//         : opt_statements(opt_stmts) {  }
-
-
-// };
 
 class t_if_then_statement : public t_statement {
   private:
@@ -119,12 +77,12 @@ class t_while_statement : public t_statement {
 
 class t_for_statement : public t_statement {
   private:
-    t_id *control_id;
+    t_name* control_id;
     t_expression *begin, *end;
     t_statement *statement;
   
   public:
-    t_for_statement(t_id *ctrl_id, t_expression *begin, t_expression *end,
+    t_for_statement(t_name* ctrl_id, t_expression *begin, t_expression *end,
                     t_statement *statement)
      : control_id(ctrl_id), begin(begin), end(end), statement(statement) {  }
 
@@ -147,16 +105,17 @@ class t_for_statement : public t_statement {
 
 class t_assignment : public t_statement {
   private:
-    t_id *id;
+    t_name* id;
     t_expression *exp;
 
   public:
-    t_assignment(t_id *id, t_expression *exp) : id(id), exp(exp) {  }
+    t_assignment(t_name* id, t_expression *exp) : id(id), exp(exp) {  }
 
     void llvm_put(std::ostream& os, int& local_var_count) {
         std::string value = exp->llvm_eval(os, local_var_count);
         std::string addr = id->llvm_ref(os, local_var_count);
-        os << "\tstore " << value << ", " << addr << ", align 4\n";
+        os << "\tstore " << exp->exp_type()->llvm_name() << value << ", "
+           << id->exp_type()->llvm_name() << "* " << addr << ", align 4\n";
     }
 
     void print(int lvl) {
@@ -176,9 +135,9 @@ class t_write : public t_statement {
     void llvm_put(std::ostream& os, int& local_var_count) {
         for (auto exp : *exps) {
             std::string ref = exp->llvm_eval(os, local_var_count);
-            os << "\t%" << local_var_count++ << " = call i32 (i8*, ...) @printf("
-               << "i8* getelementptr inbounds ([3 x i8], [3 x i8]* "
-               << "@.io.int, i32 0, i32 0), " << ref << ")\n";
+            os << "\t%" << local_var_count++ << " = call i32 (i8*, ...) @printf(i8* "
+               << "getelementptr inbounds ([3 x i8], [3 x i8]* @.io.int, i32 0, i32 0), "
+               << exp->exp_type()->llvm_name() << " " << ref << ")\n";
         }
     }
 
@@ -192,17 +151,17 @@ class t_write : public t_statement {
 
 class t_read : public t_statement {
   private:
-    t_identifiers* ids;
+    t_names* ids;
     
   public:
-    t_read(t_identifiers* ids) : ids(ids) {  }
+    t_read(t_names* ids) : ids(ids) {  }
 
     void llvm_put(std::ostream& os, int& local_var_count) {
         for (auto id : *ids) {
             std::string ref = id->llvm_ref(os, local_var_count);
-            os << "\t%" << local_var_count++ << " = call i32 (i8*, ...) @__isoc99_scanf("
-               << "i8* getelementptr inbounds ([3 x i8], [3 x i8]* "
-               << "@.io.int, i32 0, i32 0), " << ref << ")\n";
+            os << "\t%" << local_var_count++ << " = call i32 (i8*, ...) @__isoc99_scanf(i8* "
+               << "getelementptr inbounds ([3 x i8], [3 x i8]* @.io.int, i32 0, i32 0), "
+               << id->exp_type()->llvm_name() << "* " << ref << ")\n";
         }
     }
 
@@ -215,7 +174,7 @@ class t_read : public t_statement {
 };
 
 //TODO only for testing
-static t_assignment auxiliar(new t_id(0), new t_id(0));
+static t_assignment auxiliar(new t_name(0), new t_name(0));
 
 }
 
