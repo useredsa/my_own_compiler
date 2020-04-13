@@ -12,12 +12,12 @@ namespace AST {
 
 class t_if_then_statement : public t_statement {
   private:
-    t_expression *cond;
-    t_statement *conseq;
+    t_expression* cond_;
+    t_statement* conseq_;
   
   public:
     t_if_then_statement(t_expression *cond, t_statement *conseq)
-     : cond(cond), conseq(conseq) {  }
+     : cond_(cond), conseq_(conseq) {  }
 
     void llvm_put(std::ostream& os, int& local_var_count) {
         //TODO
@@ -26,9 +26,9 @@ class t_if_then_statement : public t_statement {
     void print(int lvl) {
       std::string tabs = std::string(lvl, '\t');
       std::cout << tabs << "if\n";
-      cond->print(lvl+1);
+      cond_->print(lvl+1);
       std::cout << tabs << "then\n";
-      conseq->print(lvl+1);
+      conseq_->print(lvl+1);
     }
 };
 
@@ -111,44 +111,9 @@ class t_assignment : public t_statement {
   public:
     t_assignment(t_id* id, t_expression *exp) : id(id), exp(exp) {  }
 
-    void llvm_put(std::ostream& os, int& local_var_count) {
-        // std::string value = exp->llvm_eval(os, local_var_count);
-        // std::string addr = id->llvm_ref(os, local_var_count);
-        // os << "\tstore " << exp->exp_type()->llvm_name() << value << ", "
-        //    << id->exp_type()->llvm_name() << "* " << addr << ", align 4\n";
-        //TODO
-    }
+    void llvm_put(std::ostream& os, int& local_var_count);
 
-    void print(int lvl) {
-        std::cout << std::string(lvl, '\t') << "assignment\n";
-        id->print(lvl+1);
-        exp->print(lvl+1);
-    }
-};
-
-class t_write : public t_statement {
-  private:
-    t_expressions* exps;
-    
-  public:
-    t_write(t_expressions* exps) : exps(exps) {  }
-
-    void llvm_put(std::ostream& os, int& local_var_count) {
-        for (auto exp : *exps) {
-            //TODO
-            // std::string ref = exp->llvm_eval(os, local_var_count);
-            // os << "\t%" << local_var_count++ << " = call i32 (i8*, ...) @printf(i8* "
-            //    << "getelementptr inbounds ([3 x i8], [3 x i8]* @.io.int, i32 0, i32 0), "
-            //    << exp->exp_type()->llvm_name() << " " << ref << ")\n";
-        }
-    }
-
-    void print(int lvl) {
-        std::cout << std::string(lvl, '\t') << "write statement\n";
-        for (auto exp : *exps) {
-            exp->print(lvl+1);
-        }
-    }
+    void print(int lvl);
 };
 
 class t_read : public t_statement {
@@ -158,25 +123,26 @@ class t_read : public t_statement {
   public:
     t_read(std::vector<t_id*>* ids) : ids(ids) {  }
 
-    void llvm_put(std::ostream& os, int& local_var_count) {
-        for (auto id : *ids) {
-            // std::string ref = id->llvm_ref(os, local_var_count);
-            // os << "\t%" << local_var_count++ << " = call i32 (i8*, ...) @__isoc99_scanf(i8* "
-            //    << "getelementptr inbounds ([3 x i8], [3 x i8]* @.io.int, i32 0, i32 0), "
-            //    << id->exp_type()->llvm_name() << "* " << ref << ")\n";
-        }
-    }
+    void llvm_put(std::ostream& os, int& local_var_count);
 
-    void print(int lvl) {
-        std::cout << std::string(lvl, '\t') << "read statement\n";
-        for (auto id : *ids) {
-            id->print(lvl+1);
-        }
-    }
+    void print(int lvl);
+};
+
+class t_write : public t_statement {
+  private:
+    t_expressions* exps;
+    
+  public:
+    t_write(t_expressions* exps) : exps(exps) {  }
+
+    void llvm_put(std::ostream& os, int& local_var_count);
+
+    void print(int lvl);
+
 };
 
 //TODO only for testing
-static t_assignment auxiliar(t_id::named("auxiliarTODO"), t_id::named("auxiliarTODO"));
+static t_assignment auxiliar(nullptr, nullptr);
 
 }
 

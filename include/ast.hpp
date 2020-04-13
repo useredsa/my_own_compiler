@@ -12,11 +12,11 @@ namespace AST {
  * 
  * //TODO
  */
-class T_program {
+class t_program {
   public:
-    T_program();
+    t_program();
 
-    T_program(t_functions *funcs, t_declarations *decls, t_statements *stmts);
+    t_program(t_functions *funcs, t_declarations *decls, t_statements *stmts);
 
     /**
      * @brief Prints the entire AST
@@ -28,10 +28,9 @@ class T_program {
      */
     void llvm_output(std::ostream& os, int local_var_count = 1);
 
+    t_functions* functions_;
   private:
-    t_functions *functions_;
-    t_declarations *declarations_;
-    t_statements *statements_;
+    t_function main_;
 
 };
 

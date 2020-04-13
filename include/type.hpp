@@ -10,7 +10,7 @@ class t_type {
   public:
     t_type() {  };
 
-    virtual std::string llvm_name() = 0;
+    virtual const std::string& llvm_name() = 0;
 
     void print(int lvl) {
         std::cout << std::string(lvl, '\t') << "type\n";

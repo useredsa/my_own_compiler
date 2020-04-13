@@ -1,5 +1,6 @@
 %{
 #include <stdarg.h>
+#include <iostream>
 #include <string>
 #include <vector>
 using namespace std; //TODO remove
@@ -131,7 +132,7 @@ read                                return READ;
  /* Identifiers */
 ({letter}|_)({letter}|{digit}|_){0,15}    {
                                             string* lexem = new string(yytext, yyleng);
-                                            yylval.id = lexem;
+                                            yylval.name = lexem;
                                             return ID;
                                           }
 

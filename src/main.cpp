@@ -7,7 +7,7 @@ using namespace std;
 
 // extern File* yyin
 extern int yyparse();
-extern T_program ast_root;
+extern t_program* ast_root;
 
 int main(int argc, char* argv[]) {
     // cerr << argc << endl;
@@ -19,10 +19,10 @@ int main(int argc, char* argv[]) {
         cout << "Syntactic error\n";
     } else {
         cout << "Everthing OK!\n";
-        ast_root.print();
+        ast_root->print();
         
         ofstream os("bin/a.llvm");
-        ast_root.llvm_output(os);
+        ast_root->llvm_output(os);
     }
 }
 

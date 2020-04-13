@@ -10,7 +10,7 @@ extern int yylex();
 void yyerror(const char* msg);
 extern int yylineno;
 
-T_program ast_root;
+t_program* ast_root;
 
 %} /* Grammar tokens */
 
@@ -76,15 +76,16 @@ T_program ast_root;
 %type <assig>  assignment
 %type <exp>    print_item
 %type <exps>   print_list
-%type <name>   read_item
-%type <names>  read_list
-%type <args>   arguments
+%type <id>     read_item
+%type <ids>    read_list
+%type <exps>   arguments
 %type <name>   "id"
 %type <id>     name
 %type <ids>    names //TODO volver a cambiar a id
 %type <id>     type
 
 %code requires {
+    #include <iostream>
     #include <string>
     #include "ast.hpp"
     using namespace AST;
@@ -116,8 +117,8 @@ T_program ast_root;
 
 program:
     "program" "id" "(" ")" ";" functions declarations compound_statement "." {
-        ast_root = T_program($6, $7, $8);
-        cout << "program!\n";
+        ast_root = new t_program($6, $7, $8);
+        std::cout << "program!\n";
     }
     |
     error functions declarations compound_statement "." {
@@ -140,7 +141,13 @@ function:
     "function" name "(" "const" names ":" type ")" ":" type
     declarations
     compound_statement {
-        $$ = new t_function($2, $5, $7, $10, $11, $12);
+        std::vector<std::pair<t_id*, t_id*>> args;
+        args.reserve($5->size());
+        for (t_id* id : *$5) {
+            args.emplace_back(id, $7);
+        }
+        $$ = new t_function($2, $10, args, $11, $12);
+        //TODO free $5
     }
     |
     error declarations compound_statement {
@@ -151,7 +158,7 @@ function:
 declarations:
     declarations "var" names ":" type ";" {
         $$ = $1;
-        $$->add_identifiers($3, $5);
+        $$->add_identifiers(*$3, $5);
         // free($3);
     }
     |
@@ -291,7 +298,7 @@ arguments:
     |
     {
         //TODO
-        $$ = new t_arguments();
+        $$ = new t_expressions();
     }
     ;
 
@@ -301,7 +308,7 @@ names:
     }
     |
     name {
-        $$ = new t_names();
+        $$ = new std::vector<t_id*>();
         $$->push_back($1);
     }
     ;
@@ -352,7 +359,7 @@ read_list:
     }
     |
     read_item {
-        $$ = new t_names();
+        $$ = new std::vector<t_id*>();
         $$->push_back($1);
     }
     ;
@@ -366,13 +373,8 @@ read_item: //TODO considerar quitar ya que está name
 // Additions to the grammar
 name:
     "id" {
-        int& id = name_lookup[*$1];
-        if (id == 0) {
-            name_register(*$1);
-        } else {
-            delete $1;
-        }
-        $$ = new t_name(id);
+        $$ = t_id::named(*$1);
+        //TODO free?
     }
     ;
 

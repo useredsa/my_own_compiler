@@ -40,7 +40,7 @@ CXXFLAGS=-Wall -Werror -Wno-unused -std=c++17 # Compile-time flags
 LDLIBS=
 	
 
-$(TARGET): $(BUILD)/syntax.tab.cpp $(BUILD)/lex.yy.c $(OBJS)
+$(TARGET): $(BUILD)/syntax.tab.cpp $(BUILD)/lex.yy.cpp $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INC) $(LDLIBS) $^ -o $(TARGET)
 
 # rule to generate a dep file by using the C preprocessor
@@ -52,7 +52,7 @@ $(BUILD)/%.d: $(SRCD)/%.cpp
 
 # Compiles lexicon file into a single source file using flex. Uses the tokens defined
 # by the grammar file.
-$(BUILD)/lex.yy.c: lexicon.ll $(INCD)/syntax.tab.hpp
+$(BUILD)/lex.yy.cpp: lexicon.ll $(INCD)/syntax.tab.hpp
 	flex -o $@ $<
 
 # Compiles syntax file into a header file and a source file. The header file goes into
@@ -70,7 +70,7 @@ $(BUILD)/main.d: $(INCD)/syntax.tab.hpp
 .PHONY: clean cleandep
 
 clean:
-	rm -f $(TARGET) $(OBJS) $(INCD)/syntax.tab.hpp $(BUILD)/syntax.tab.cpp $(BUILD)/lex.yy.c
+	rm -f $(TARGET) $(OBJS) $(INCD)/syntax.tab.hpp $(BUILD)/syntax.tab.cpp $(BUILD)/lex.yy.cpp
 
 cleandep:
 	rm -f $(DEPS)

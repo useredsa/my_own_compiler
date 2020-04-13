@@ -15,16 +15,21 @@ class t_int_lit;
 
 class t_declarations {
   public:
-    std::vector<t_id*> constants;
-    std::vector<t_id*> variables;
-
-    t_declarations() : constants(), variables() {  }
+    t_declarations() : constants_(), variables_() {  }
 
     void add_constants(const std::vector<std::pair<t_id*, t_int_lit*>>&  cons);
 
     void add_identifiers(const std::vector<t_id*>& ids, t_id* type);
 
+    void llvm_put_constants(std::ostream& os);
+
+    void llvm_put_variables(std::ostream& os);
+
     void print(int lvl);
+
+  private:
+    std::vector<t_id*> constants_;
+    std::vector<t_id*> variables_;
 };
 
 /**
@@ -44,10 +49,18 @@ class t_function {
         return signature_;
     }
 
+    void llvm_put(std::ostream& os);
+
+    //TODO poner que las funciones inline sobreescriben esto para poner un inline
+    virtual std::string llvm_put_call(std::ostream& os,
+                                      int& local_var_count,
+                                      std::vector<std::string*> params);
+
     void print(int lvl);
 
   private:
     t_id* type_;
+    const std::string& name_;
     std::vector<t_id*> args_;
     std::vector<t_id*> signature_;
     t_declarations* declarations_;

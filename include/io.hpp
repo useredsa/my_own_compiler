@@ -30,7 +30,6 @@ namespace AST {
 //     }
 // };
 
-using t_read_item = std::string;
 // class t_read_item {
     
 // };

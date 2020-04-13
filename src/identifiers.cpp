@@ -3,8 +3,14 @@
 
 namespace AST {
 
+std::vector<t_id*> t_id::program_identifiers{};
+//TODO peligro de usar named en inicialización
+std::unordered_map<std::string, t_id*>* t_id::identifiers_look_up = nullptr;
+
 t_id* t_id::named(const std::string& name) {
-    t_id*& ptr = identifiers_look_up[name];
+    if (identifiers_look_up == nullptr)
+        identifiers_look_up = new std::unordered_map<std::string, t_id*>();
+    t_id*& ptr = (*identifiers_look_up)[name];
     if (ptr == nullptr) {
         ptr = new t_id(name);
         program_identifiers.push_back(ptr);
@@ -12,7 +18,7 @@ t_id* t_id::named(const std::string& name) {
     return ptr;
 }
 
-t_id::t_id(const std::string& name) : name_(name), obj_type_(ObjType::UNDECLARED) {  }
+t_id::t_id(const std::string& name) : name_(name), obj_type_(UNDECLARED) {  }
 
 bool t_id::register_function(t_function* func) {
     switch (obj_type_) {
@@ -21,7 +27,7 @@ bool t_id::register_function(t_function* func) {
             obj_data_.funcs = std::vector<t_function*>();
             // Deliberate fall-through
         case FUNCTION:
-            if (can_be_called(func->signature()))
+            if (can_be_called(func->signature()) != nullptr)
                 return false;
             obj_data_.funcs.push_back(func);
             return true;
@@ -34,7 +40,7 @@ bool t_id::register_as_variable(t_id* type) {
     if (obj_type_ != UNDECLARED)
         return false;
     obj_type_ = VARIABLE;
-    obj_data_.var = new t_var(type); //TODO considerar usar memoria estática
+    obj_data_.var = new t_var(name_, type); //TODO considerar usar memoria estática
     return true;
 }
 
@@ -42,7 +48,7 @@ bool t_id::register_as_constant(t_int_lit* val) {
     if (obj_type_ != UNDECLARED)
         return false;
     obj_type_ = CONSTANT;
-    obj_data_.cons = new t_constant(val);
+    obj_data_.cons = new t_constant(name_, val);
     return true;
 }
 
@@ -54,14 +60,14 @@ bool t_id::register_as_type(t_type* type) {
     return true;
 }
 
-bool t_id::can_be_called(const std::vector<t_id*>& signature) {
+t_function* t_id::can_be_called(const std::vector<t_id*>& signature) {
     if (obj_type_ != FUNCTION)
-        return false;
+        return nullptr;
     for (auto func : obj_data_.funcs) {
         if (func->signature() == signature)
-            return true;
+            return func;
     }
-    return false;
+    return nullptr;
 }
 
 t_id* t_id::exp_type() {
@@ -69,8 +75,30 @@ t_id* t_id::exp_type() {
     return obj_data_.var->type();
 }
 
+std::string t_id::llvm_eval(std::ostream& os, int& local_var_count) {
+    if (obj_type_ == VARIABLE) {
+        std::string ref = "%" + std::to_string(local_var_count++);
+        os << "\t" << ref << " = " << "load "
+           << obj_data_.var->type()->llvm_type_name()
+           << ", " << exp_type()->llvm_type_name() << "* %" << name_
+           << ", align 4\n";
+        return ref;
+    }
+    if (obj_type_ == CONSTANT) {
+        //TODO
+    }
+    //TODO y otro error pero este debe comprobarse antes :/
+    return "ERROR";
+}
+
+void t_id::llvm_var_alloca(std::ostream& os) {
+    assert(obj_type_ == VARIABLE);
+    os << "\t%" << name_ << " = alloca " << obj_data_.var->type()->llvm_type_name()
+       << ", align 4\n";
+}
+
 void t_id::print(int lvl) {
     std::cout << std::string(lvl, '\t') << "id: " << name_ << '\n';
 }
 
-}  // namespace
+}  // namespace AST
