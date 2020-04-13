@@ -194,7 +194,7 @@ class t_id : public t_expression {
     t_id(const std::string& name);
 };
 
-}
+}  // namespace
 
 #endif // IDENTIFIERS_HPP
 

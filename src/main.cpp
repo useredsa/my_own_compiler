@@ -20,10 +20,9 @@ int main(int argc, char* argv[]) {
     } else {
         cout << "Everthing OK!\n";
         ast_root.print();
+        
+        ofstream os("bin/a.llvm");
+        ast_root.llvm_output(os);
     }
-
-    ofstream os("bin/a.llvm");
-
-    ast_root.llvm_output(os);
 }
 

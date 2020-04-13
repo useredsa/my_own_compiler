@@ -108,6 +108,10 @@ T_program ast_root;
     std::vector<t_expression*>* args;
 }
 
+//TODO Destructors of discarded symbols
+// %destructor { } <intlit>  //TODO Include types with no destructor defined
+// %destructor { delete $$; } <*>  // Default destructor for type defined symbols
+
 %% /* Production Rules */
 
 program:
