@@ -77,12 +77,12 @@ class t_while_statement : public t_statement {
 
 class t_for_statement : public t_statement {
   private:
-    t_name* control_id;
+    t_id* control_id;
     t_expression *begin, *end;
     t_statement *statement;
   
   public:
-    t_for_statement(t_name* ctrl_id, t_expression *begin, t_expression *end,
+    t_for_statement(t_id* ctrl_id, t_expression *begin, t_expression *end,
                     t_statement *statement)
      : control_id(ctrl_id), begin(begin), end(end), statement(statement) {  }
 
@@ -105,17 +105,18 @@ class t_for_statement : public t_statement {
 
 class t_assignment : public t_statement {
   private:
-    t_name* id;
+    t_id* id;
     t_expression *exp;
 
   public:
-    t_assignment(t_name* id, t_expression *exp) : id(id), exp(exp) {  }
+    t_assignment(t_id* id, t_expression *exp) : id(id), exp(exp) {  }
 
     void llvm_put(std::ostream& os, int& local_var_count) {
-        std::string value = exp->llvm_eval(os, local_var_count);
-        std::string addr = id->llvm_ref(os, local_var_count);
-        os << "\tstore " << exp->exp_type()->llvm_name() << value << ", "
-           << id->exp_type()->llvm_name() << "* " << addr << ", align 4\n";
+        // std::string value = exp->llvm_eval(os, local_var_count);
+        // std::string addr = id->llvm_ref(os, local_var_count);
+        // os << "\tstore " << exp->exp_type()->llvm_name() << value << ", "
+        //    << id->exp_type()->llvm_name() << "* " << addr << ", align 4\n";
+        //TODO
     }
 
     void print(int lvl) {
@@ -134,10 +135,11 @@ class t_write : public t_statement {
 
     void llvm_put(std::ostream& os, int& local_var_count) {
         for (auto exp : *exps) {
-            std::string ref = exp->llvm_eval(os, local_var_count);
-            os << "\t%" << local_var_count++ << " = call i32 (i8*, ...) @printf(i8* "
-               << "getelementptr inbounds ([3 x i8], [3 x i8]* @.io.int, i32 0, i32 0), "
-               << exp->exp_type()->llvm_name() << " " << ref << ")\n";
+            //TODO
+            // std::string ref = exp->llvm_eval(os, local_var_count);
+            // os << "\t%" << local_var_count++ << " = call i32 (i8*, ...) @printf(i8* "
+            //    << "getelementptr inbounds ([3 x i8], [3 x i8]* @.io.int, i32 0, i32 0), "
+            //    << exp->exp_type()->llvm_name() << " " << ref << ")\n";
         }
     }
 
@@ -151,17 +153,17 @@ class t_write : public t_statement {
 
 class t_read : public t_statement {
   private:
-    t_names* ids;
+    std::vector<t_id*>* ids;
     
   public:
-    t_read(t_names* ids) : ids(ids) {  }
+    t_read(std::vector<t_id*>* ids) : ids(ids) {  }
 
     void llvm_put(std::ostream& os, int& local_var_count) {
         for (auto id : *ids) {
-            std::string ref = id->llvm_ref(os, local_var_count);
-            os << "\t%" << local_var_count++ << " = call i32 (i8*, ...) @__isoc99_scanf(i8* "
-               << "getelementptr inbounds ([3 x i8], [3 x i8]* @.io.int, i32 0, i32 0), "
-               << id->exp_type()->llvm_name() << "* " << ref << ")\n";
+            // std::string ref = id->llvm_ref(os, local_var_count);
+            // os << "\t%" << local_var_count++ << " = call i32 (i8*, ...) @__isoc99_scanf(i8* "
+            //    << "getelementptr inbounds ([3 x i8], [3 x i8]* @.io.int, i32 0, i32 0), "
+            //    << id->exp_type()->llvm_name() << "* " << ref << ")\n";
         }
     }
 
@@ -174,7 +176,7 @@ class t_read : public t_statement {
 };
 
 //TODO only for testing
-static t_assignment auxiliar(new t_name(0), new t_name(0));
+static t_assignment auxiliar(t_id::named("auxiliarTODO"), t_id::named("auxiliarTODO"));
 
 }
 

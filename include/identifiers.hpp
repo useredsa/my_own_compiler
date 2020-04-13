@@ -12,19 +12,24 @@
 
 namespace AST {
 
+// Needed because of circular dependencies
+class t_int_lit;
+class t_function;
+class t_id;
+
 /**
  * @brief Intrinsec data to a variable
  */
 class t_var { //TODO considerar poner como struct
   public:
-    t_var(t_type* type) : type_(type) {  }
+    t_var(t_id* type) : type_(type) {  }
 
-    inline t_type* type() {
+    inline t_id* type() {
         return type_;
     }
 
   private:
-    t_type* type_;
+    t_id* type_;
 };
 
 /**
@@ -34,12 +39,12 @@ class t_constant {
   public:
     t_constant(t_int_lit* val) : val_(val) {  }
     
-    inline t_type* type() {
+    inline t_id* type() {
         return type_;
     }
 
   private:
-    t_type* type_;
+    t_id* type_;
     t_int_lit* val_;
 };
 
@@ -86,7 +91,7 @@ class t_id : public t_expression {
      * 
      * @returns if the var was registered.
      */
-    bool register_as_variable(t_type* type);
+    bool register_as_variable(t_id* type);
 
     /**
      * @brief Associates a constant with this id.
@@ -142,7 +147,7 @@ class t_id : public t_expression {
     //     return llvm_id;
     // }
 
-    virtual t_type* exp_type();
+    virtual t_id* exp_type();
     
     virtual std::string llvm_eval(std::ostream& os, int& local_var_count) {
         std::string ref = "%" + std::to_string(local_var_count);

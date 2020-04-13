@@ -8,8 +8,8 @@ t_declarations::add_constants(const std::vector<std::pair<t_id*, t_int_lit*>>&  
         if (!id->register_as_constant(val)) {
             //TODO std::cerr << "ERROR..."
         }
+        constants.push_back(id);
     }
-    constants.insert(constants.end(), cons.begin(), cons.end());
 }
 
 void t_declarations::add_identifiers(const std::vector<t_id*>& ids, t_id* type) {
@@ -18,8 +18,8 @@ void t_declarations::add_identifiers(const std::vector<t_id*>& ids, t_id* type) 
             std::cerr << "ERROR: identifier " <<  id->name() << " already in use. Unavailable to define as a variable\n";
             //TODO habrá que registrar los errores para llevar cuenta
         }
+        variables.push_back(id);
     }
-    variables.insert(variables.end(), ids.begin(), ids.end());
 }
 
 void t_declarations::print(int lvl) {
@@ -54,21 +54,22 @@ t_function::t_function(t_id* type,
     if (!name->register_function(this)) {
         //TODO std::cerr << "ERROR: the function cannot be named " << name << " a variable or a function with the same signature is registered with that name\n";
     }
-    t_id& info = name->info();
 }
 
-t_function::print(int lvl) {
+void t_function::print(int lvl) {
     std::string tabs(lvl, '\t');
     std::cout << "function " /*<< id_data[id]*/ << '\n';
-    std::cout << "\n\targuments:\n";
-    for (auto arg : *args) {
-        arg->print(lvl+2);
-    }
+    std::cout << "return type:\n";
+    type_->print(lvl+1);
+    std::cout << "\n\tsignature:\n";
+    // for (auto arg : args_) {
+    //     arg->print(lvl+2);
+    // } //TODO
     //cout << "arguments type:\n";
-    args_type->print(lvl+1);
-    //cout << "return type:\n";
-    return_->print(lvl+1);
-    statements->print(lvl+1);
+    for (t_id* id : signature_) {
+        id->print(lvl+1);
+    }
+    statements_->print(lvl+1);
 }
 
 }

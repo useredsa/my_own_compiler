@@ -31,7 +31,7 @@ bool t_id::register_function(t_function* func) {
     }
 }
 
-bool t_id::register_as_variable(t_type* type) {
+bool t_id::register_as_variable(t_id* type) {
     if (obj_type_ != UNDECLARED)
         return false;
     obj_type_ = VARIABLE;
@@ -65,7 +65,7 @@ bool t_id::can_be_called(const std::vector<t_id*>& signature) {
     return false;
 }
 
-t_type* t_id::exp_type() {
+t_id* t_id::exp_type() {
     assert(obj_type_ == VARIABLE);
     return obj_data_.var->type();
 }

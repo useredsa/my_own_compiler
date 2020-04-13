@@ -79,10 +79,10 @@ T_program ast_root;
 %type <name>   read_item
 %type <names>  read_list
 %type <args>   arguments
-%type <id>     "id"
-%type <name>   name
-%type <names>  names 
-%type <type>   type
+%type <name>   "id"
+%type <id>     name
+%type <ids>    names //TODO volver a cambiar a id
+%type <id>     type
 
 %code requires {
     #include <string>
@@ -102,11 +102,10 @@ T_program ast_root;
     t_expression*   exp;
     t_expressions*  exps;
     t_assignment*   assig;
-    t_arguments*    args;
-    std::string*    id;
-    t_name*         name;
-    t_names*        names;
-    t_type*         type;
+    std::string*    name;
+    t_id*           id;
+    std::vector<t_id*>*         ids;
+    std::vector<t_expression*>* args;
 }
 
 %% /* Production Rules */
@@ -305,7 +304,7 @@ names:
 
 type:
     "integer" {
-        $$ = new builtin::t_int();
+        $$ = t_id::named("integer");
     }
     ;
 

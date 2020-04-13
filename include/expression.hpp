@@ -8,9 +8,11 @@
 
 namespace AST {
 
+class t_id;
+
 class t_expression /*TODO remove : public t_print_item*/ {
   public:
-    virtual t_type* exp_type() = 0;
+    virtual t_id* exp_type() = 0;
     // virtual int reg() = 0;
     virtual void print(int lvl) = 0;
     virtual std::string llvm_eval(std::ostream& os, int& local_var_count) = 0;
