@@ -109,6 +109,10 @@ T_program ast_root;
     t_type*         type;
 }
 
+//TODO Destructors of discarded symbols
+// %destructor { } <intlit>  //TODO Include types with no destructor defined
+// %destructor { delete $$; } <*>  // Default destructor for type defined symbols
+
 %% /* Production Rules */
 
 program:

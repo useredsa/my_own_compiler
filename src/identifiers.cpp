@@ -3,7 +3,6 @@
 
 namespace AST {
 
-
 t_id* t_id::named(const std::string& name) {
     t_id*& ptr = identifiers_look_up[name];
     if (ptr == nullptr) {
@@ -74,4 +73,4 @@ void t_id::print(int lvl) {
     std::cout << std::string(lvl, '\t') << "id: " << name_ << '\n';
 }
 
-}
+}  // namespace
