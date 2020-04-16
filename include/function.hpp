@@ -13,16 +13,29 @@ namespace AST {
 class t_id;
 class t_int_lit;
 
+/**
+ * @brief A list of declarations of constants and/or variables
+ * 
+ * //TODO
+ */
 class t_declarations {
   public:
     t_declarations() : constants_(), variables_() {  }
 
+    /**
+     * @brief Adds a list of constants declarations
+     */
     void add_constants(const std::vector<std::pair<t_id*, t_int_lit*>>&  cons);
 
+    /**
+     * @brief Adds a list of variables declarations? //TODO Por qué identifiers?
+     */
     void add_identifiers(const std::vector<t_id*>& ids, t_id* type);
 
+    //TODO
     void llvm_put_constants(std::ostream& os);
 
+    //TODO
     void llvm_put_variables(std::ostream& os);
 
     void print(int lvl);
@@ -71,7 +84,7 @@ class t_functions : public std::vector<t_function*> {
 
 };
 
-}
+}  // namespace AST
 
 #endif // FUNCTION_HPP
 

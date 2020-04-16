@@ -1,6 +1,7 @@
 #include "ast.hpp"
 
 #include <iostream>
+
 #include "builtin.hpp"
 
 namespace AST {
@@ -42,4 +43,4 @@ void t_program::llvm_output(std::ostream& os, int local_var_count) {
     os << "declare i32 @printf(i8*, ...)\n";
 }
 
-}  //namespace
+}  //namespace AST

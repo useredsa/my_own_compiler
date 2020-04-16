@@ -1,22 +1,24 @@
 #include "function.hpp"
 
+#include "errors.hpp"
+
 namespace AST {
 
-void
-t_declarations::add_constants(const std::vector<std::pair<t_id*, t_int_lit*>>&  cons) {
+void t_declarations::add_constants(
+        const std::vector<std::pair<t_id*, t_int_lit*>>&  cons) {
     for (auto [id, val] : cons) {
         if (!id->register_as_constant(val)) {
-            //TODO std::cerr << "ERROR..."
+            //TODO semantic_error << "ERROR..."
         }
         constants_.push_back(id);
     }
 }
 
-void t_declarations::add_identifiers(const std::vector<t_id*>& ids, t_id* type) {
+void t_declarations::add_identifiers(
+        const std::vector<t_id*>& ids, t_id* type) {
     for (t_id* id : ids) {
         if (!id->register_as_variable(type)) {
-            std::cerr << "ERROR: identifier " <<  id->name() << " already in use. Unavailable to define as a variable\n";
-            //TODO habrá que registrar los errores para llevar cuenta
+            semantic_error << "ERROR: identifier " <<  id->name() << " already in use. Unavailable to define as a variable\n";
         }
         variables_.push_back(id);
     }
@@ -29,7 +31,7 @@ void t_declarations::llvm_put_constants(std::ostream& os) {
 void t_declarations::llvm_put_variables(std::ostream& os) {
     for (t_id* id : variables_) {
         if (not id->is_a_variable()) {
-            std::cerr << "ERROR: not a variable!\n"; //TODO
+            semantic_error << "ERROR: not a variable!\n"; //TODO
             continue;
         }
         id->llvm_var_alloca(os);
@@ -67,7 +69,7 @@ t_function::t_function(t_id* type,
     }
     // Important: Register after construction is finished
     if (!name->register_function(this)) {
-        //TODO std::cerr << "ERROR: the function cannot be named " << name << " a variable or a function with the same signature is registered with that name\n";
+        //TODO semantic_error << "ERROR: the function cannot be named " << name << " a variable or a function with the same signature is registered with that name\n";
     }
 }
 
@@ -94,9 +96,9 @@ std::string t_function::llvm_put_call(std::ostream& os,
 void t_function::print(int lvl) {
     std::string tabs(lvl, '\t');
     std::cout << "function " /*<< id_data[id]*/ << '\n';
-    std::cout << "return type:\n";
+    std::cout << "\treturn type:\n";
     type_->print(lvl+1);
-    std::cout << "\n\tsignature:\n";
+    std::cout << "\tsignature:\n";
     // for (auto arg : args_) {
     //     arg->print(lvl+2);
     // } //TODO
@@ -107,4 +109,4 @@ void t_function::print(int lvl) {
     statements_->print(lvl+1);
 }
 
-}
+}  // namespace AST

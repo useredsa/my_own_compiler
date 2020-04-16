@@ -14,8 +14,6 @@ namespace AST {
  */
 class t_program {
   public:
-    t_program();
-
     t_program(t_functions *funcs, t_declarations *decls, t_statements *stmts);
 
     /**
@@ -28,13 +26,12 @@ class t_program {
      */
     void llvm_output(std::ostream& os, int local_var_count = 1);
 
-    t_functions* functions_;
   private:
+    t_functions* functions_;
     t_function main_;
-
 };
 
-}  // namespace
+}  // namespace AST
 
 #endif // AST_HPP
 

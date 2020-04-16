@@ -1,5 +1,9 @@
 #include "identifiers.hpp"
+
 #include <assert.h>
+
+#include <iostream>
+#include <cstring>
 
 namespace AST {
 
