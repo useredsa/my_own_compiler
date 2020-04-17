@@ -12,17 +12,6 @@ class ErrorLogger {
     template<typename T>
     std::ostream& operator<< (const T& val) {
         ++counter;
-        //TODO En lugar de hacer esto, podríamos tener una función
-        //     de terminación. Así podríamos escribir un error en
-        //     varias sentencias:
-        //       Code:
-        //         semantic_error << "cosas largas que terminan...";
-        //         semantic_error << " ...aquí" << enderror;
-        //         cout << semantic_error.GetCounter();
-        //       Output:
-        //         cosas largas que terminan... ...aquí
-        //         1
-
         os << Type() << " Error: ";
         os << val;
         return os;
@@ -43,11 +32,12 @@ class ErrorLogger {
  * 
  * Example:
  *     Code:
- *         semantic_error << "Este es mi pana Miguel, él es el test sentence " << semantic_error.GetCounter() << endl;
+ *         semantic_error << "Este es mi pana Miguel, él es el test sentence número "
+ *                        << semantic_error.GetCounter() << endl;
  *         semantic_error << "Aunque se le ve bien fresco, este es un error diferente\n";
  *         semantic_error << "Y con este ya llevamos " << semantic_error.GetCounter();
  *     Output:
- *         Semantic Error: Este es mi pana Miguel, él es el test sentence 1
+ *         Semantic Error: Este es mi pana Miguel, él es el test sentence número 1
  *         Semantic Error: Aunque se le ve bien fresco, este es un error diferente
  *         Semantic Error: Y con este ya llevamos 3
  */

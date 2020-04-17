@@ -79,9 +79,7 @@ void t_function::llvm_put(std::ostream& os) {
     os << "define i32 @" << "main" << "() {\n"; //TODO include signature
     int local_var_count = 1;
     declarations_->llvm_put_variables(os);
-    for (auto st : *statements_) {
-        st->llvm_put(os, local_var_count);
-    }
+    statements_->llvm_put(os, local_var_count);
     os << "\tret i32 0\n"; //TODO return type!
     os << "}\n\n";
 }
@@ -106,6 +104,7 @@ void t_function::print(int lvl) {
     for (t_id* id : signature_) {
         id->print(lvl+1);
     }
+    std::cout << "\tstatements:\n";
     statements_->print(lvl+1);
 }
 
