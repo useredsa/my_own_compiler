@@ -1,5 +1,9 @@
 #include "identifiers.hpp"
+
 #include <assert.h>
+
+#include <iostream>
+#include <cstring>
 
 namespace AST {
 
@@ -79,7 +83,7 @@ std::string t_id::llvm_eval(std::ostream& os, int& local_var_count) {
     if (obj_type_ == VARIABLE) {
         std::string ref = "%" + std::to_string(local_var_count++);
         os << "\t" << ref << " = " << "load "
-           << obj_data_.var->type()->llvm_type_name()
+           << exp_type()->llvm_type_name()
            << ", " << exp_type()->llvm_type_name() << "* %" << name_
            << ", align 4\n";
         return ref;

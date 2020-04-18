@@ -14,7 +14,7 @@ las funciones tienen que hacer checqueo de el tipo de parámetros que se les pas
   - Los operadores builtin podemos hacer que estén ya registrados
   - 
 
-entender las diferencias:
+Entender las diferencias:
 - tipos vs instancias de esos tipos
 - declaraciones vs implementaciones vs uso
 - 
@@ -25,6 +25,7 @@ Añado name y type para tratar un id de forma diferente
 Me parece correcto entonces llamar id a un nombre cualquiera en todos sitios
 cambio el nombre de una regla para que identifiers pase a ser names, aunque no
 cambia la gramática
+Esto se deshace o klk?
 
 
 DATOS

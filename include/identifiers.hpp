@@ -1,12 +1,12 @@
 #ifndef IDENTIFIERS_HPP
 #define IDENTIFIERS_HPP
 
-#include <iostream>
-#include <cstring>
+#include <assert.h>
+
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include <assert.h>
+
 #include "function.hpp"
 #include "type.hpp"
 #include "expression.hpp"
@@ -16,7 +16,6 @@ namespace AST {
 // Needed because of circular dependencies
 class t_int_lit;
 class t_function;
-class t_id;
 
 /**
  * @brief Intrinsec data to a variable
@@ -196,7 +195,7 @@ class t_id : public t_expression {
     t_id(const std::string& name);
 };
 
-}  // namespace
+}  // namespace AST
 
 #endif // IDENTIFIERS_HPP
 

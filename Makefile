@@ -40,13 +40,13 @@ CXXFLAGS=-Wall -Werror -Wno-unused -std=c++17 # Compile-time flags
 LDLIBS=
 	
 
-$(TARGET): $(BUILD)/syntax.tab.cpp $(BUILD)/lex.yy.cpp $(OBJS)
+$(TARGET): $(BUILD)/syntax.tab.cpp $(BUILD)/lex.yy.cpp $(OBJS) | $(BIND)
 	$(CXX) $(CXXFLAGS) $(INC) $(LDLIBS) $^ -o $(TARGET)
 
 # rule to generate a dep file by using the C preprocessor
 # (see man cpp for details on the -MM and -MT options)
-$(BUILD)/%.d: $(SRCD)/%.cpp
-	($(CXX) $(CXXFLAGS) $(INC) $(LDLIBS) $< -MM -MT $(@:.d=.o) && echo '\t$(CXX) $(CXXFLAGS) $(INC) $(LDLIBS) -c $< -o $(@:.d=.o)';) >$@
+$(BUILD)/%.d: $(SRCD)/%.cpp | $(BUILD)
+	($(CXX) $(CXXFLAGS) $(INC) $(LDLIBS) $< -MM -MT $(@:.d=.o) && printf '\t$(CXX) $(CXXFLAGS) $(INC) $(LDLIBS) -c $< -o $(@:.d=.o)';) >$@
 
 # Files without auto detection of dependencies.
 
@@ -62,6 +62,11 @@ $(BUILD)/syntax.tab.cpp $(INCD)/syntax.tab.hpp: syntax.yy $(INCD)/ast.hpp $(INCD
 
 $(BUILD)/main.d: $(INCD)/syntax.tab.hpp
 
+$(BUILD):
+	mkdir $@
+
+$(BIND):
+	mkdir $@
 
 
 # Include dependencies files
@@ -78,7 +83,10 @@ cleandep:
 run : $(TARGET) tests/example_program3.mp
 	./$(TARGET) < tests/example_program3.mp
 	cat bin/a.llvm
-	llvm-as-6.0 < $(BIND)/a.llvm > $(BIND)/a.bc
-	clang $(BIND)/a.bc -o $(BIND)/a.out
+	llvm-as < $(BIND)/a.llvm > $(BIND)/a.bc
+	llc $(BIND)/a.bc
+	gcc $(BIND)/a.s -o $(BIND)/a.out
+	#llvm-as-6.0 < $(BIND)/a.llvm > $(BIND)/a.bc
+	#clang $(BIND)/a.bc -o $(BIND)/a.out
 	./$(BIND)/a.out
 

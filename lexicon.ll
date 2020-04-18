@@ -60,7 +60,7 @@ unrecognized        [^0-9a-zA-Z()".,:;=+\-*/\\ \t\r\n]
  /* Strings */
 "\""                                {
                                       strlit = new string();
-                                      yymore();  //TODO Esto supongo que ya no tiene sentido
+                                      //yymore();  //TODO Esto supongo que ya no tiene sentido
                                       BEGIN(STRING_COND);
                                     }
 <STRING_COND>"\n"                   {
