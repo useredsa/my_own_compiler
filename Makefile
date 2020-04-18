@@ -77,6 +77,7 @@ cleandep:
 
 run : $(TARGET) tests/example_program3.mp
 	./$(TARGET) < tests/example_program3.mp
+	cat bin/a.llvm
 	llvm-as-6.0 < $(BIND)/a.llvm > $(BIND)/a.bc
 	clang $(BIND)/a.bc -o $(BIND)/a.out
 	./$(BIND)/a.out

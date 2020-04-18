@@ -26,7 +26,6 @@ class t_statements : public std::vector<t_statement*>, public t_statement {
         for (auto st : *this) {
             st->print(lvl+1);
         }
-        std::cout << tabs << "end\n";
     }
 };
 

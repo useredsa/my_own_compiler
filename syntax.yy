@@ -118,7 +118,7 @@ t_program* ast_root;
 program:
     "program" "id" "(" ")" ";" functions declarations compound_statement "." {
         ast_root = new t_program($6, $7, $8);
-        std::cout << "program!\n";
+        // std::cout << "program!\n";
     }
     |
     error functions declarations compound_statement "." {

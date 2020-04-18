@@ -93,17 +93,17 @@ std::string t_function::llvm_put_call(std::ostream& os,
 
 void t_function::print(int lvl) {
     std::string tabs(lvl, '\t');
-    std::cout << "function " /*<< id_data[id]*/ << '\n';
-    std::cout << "return type:\n";
+    std::cout << tabs << "function " /*<< id_data[id]*/ << '\n';
+    std::cout << tabs << "\treturn type:\n";
     type_->print(lvl+1);
-    std::cout << "\n\tsignature:\n";
     // for (auto arg : args_) {
     //     arg->print(lvl+2);
     // } //TODO
-    //cout << "arguments type:\n";
+    std::cout << tabs << "\tsignature:\n";
     for (t_id* id : signature_) {
         id->print(lvl+1);
     }
+    std::cout << tabs << "\tstatements:\n";
     statements_->print(lvl+1);
 }
 
