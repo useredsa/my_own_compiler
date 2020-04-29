@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "namespace.hpp"
 #include "builtin.hpp"
 
 namespace AST {
@@ -9,8 +10,8 @@ namespace AST {
 t_program::t_program(t_functions *funcs, t_declarations *decls,
                      t_statements *stmts) :
                      functions_(funcs),
-                     main_(t_id::named("integer"),
-                           t_id::named("main"),
+                     main_(t_namespace::get_id("integer"),
+                           t_namespace::get_id("main"),
                            std::vector<std::pair<t_id*, t_id*>>(),
                            decls,
                            stmts) {  }

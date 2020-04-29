@@ -1,5 +1,6 @@
 #include "statements.hpp"
 
+#include "namespace.hpp"
 #include "errors.hpp"
 
 namespace AST {
@@ -19,7 +20,7 @@ void t_assignment::print(int lvl) {
 }
 
 void t_if_then_statement::llvm_put(std::ostream& os, int& local_var_count) {
-    if (cond_->exp_type() == t_id::named("integer")) {
+    if (cond_->exp_type() == t_namespace::get_id("integer")) { //TODO cambiar por referencia
         int label_num = local_var_count;  //TODO Llevar cuenta de las etiquetas? 
         std::string cond_value = cond_->llvm_eval(os, local_var_count);
         os << "\t%" << local_var_count << " = icmp ne i32 " << cond_value << ", 0\n";
@@ -58,7 +59,7 @@ void t_while_statement::llvm_put(std::ostream& os, int& local_var_count) {
     int label_num = local_var_count;
     os << "\tbr label %whilecomp" << label_num << "\n";
     os << "whilecomp" << label_num << ":\n";
-    if (cond_->exp_type() == t_id::named("integer")) {
+    if (cond_->exp_type() == t_namespace::get_id("integer")) {
         std::string cond_value = cond_->llvm_eval(os, local_var_count);
         os << "\t%" << local_var_count << " = icmp ne i32 " << cond_value << ", 0\n";
         os << "\tbr i1 %" << local_var_count++
@@ -85,15 +86,15 @@ void t_while_statement::print(int lvl) {
 t_for_statement::t_for_statement(t_id* ctrl_id, t_expression *begin,
                                  t_expression *end, t_statement *statement)
         : control_id_(ctrl_id), begin_(begin), end_(end), statement_(statement) {
-    control_id_->register_as_variable(t_id::named("integer"));
+    control_id_->register_as_variable(t_namespace::get_id("integer"));
 }
 
 void t_for_statement::llvm_put(std::ostream& os, int& local_var_count) {
-    if (begin_->exp_type() != t_id::named("integer") ||
-        end_->exp_type() != t_id::named("integer")) {
-        if (begin_->exp_type() != t_id::named("integer"))
+    if (begin_->exp_type() != t_namespace::get_id("integer") ||
+        end_->exp_type() != t_namespace::get_id("integer")) {
+        if (begin_->exp_type() != t_namespace::get_id("integer"))
             semantic_error << "Incompatible type in initial value: expected integer\n";
-        if (end_->exp_type() != t_id::named("integer"))
+        if (end_->exp_type() != t_namespace::get_id("integer"))
             semantic_error << "Incompatible type in final value: expected integer\n";
     }  //TODO Arreglar la cutrez y no ejecutar lo siguiente
 
@@ -113,7 +114,7 @@ void t_for_statement::llvm_put(std::ostream& os, int& local_var_count) {
     os << "forcomp" << label_num << ":\n";
     std::string ctrl_id_value = control_id_->llvm_eval(os, local_var_count);
     os << "\t%" << local_var_count << " = icmp ne "
-       << t_id::named("integer")->llvm_type_name() << " " << ctrl_id_value
+       << t_namespace::get_id("integer")->llvm_type_name() << " " << ctrl_id_value
        << ", " << final_value << "\n";
     os << "\tbr i1 %" << local_var_count++
        << ", label %forloop" << label_num
@@ -147,13 +148,13 @@ void t_read::llvm_put(std::ostream& os, int& local_var_count) {
             //TODO y otro error más
             continue;
         }
-        if (id->exp_type() == t_id::named("integer")) {
+        if (id->exp_type() == t_namespace::get_id("integer")) {
             std::string ref = id->llvm_var_name(os, local_var_count);
             os << "\t%" << local_var_count++ << " = call i32 (i8*, ...) "
                << "@__isoc99_scanf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* "
                << "@.io.int, i32 0, i32 0), " << id->exp_type()->llvm_type_name()
                << "* " << ref << ")\n";
-        } else if (id->exp_type() == t_id::named("str")) {
+        } else if (id->exp_type() == t_namespace::get_id("str")) {
             //TODO
         } else {
             //TODO imprimir error read no soporta cosas que no sean builtin
@@ -170,13 +171,13 @@ void t_read::print(int lvl) {
 
 void t_write::llvm_put(std::ostream& os, int& local_var_count) {
     for (auto exp : *exps) {
-        if (exp->exp_type() == t_id::named("integer")) {
+        if (exp->exp_type() == t_namespace::get_id("integer")) {
             std::string ref = exp->llvm_eval(os, local_var_count);
             os << "\t%" << local_var_count++ << " = call i32 (i8*, ...) @printf(i8* "
                << "getelementptr inbounds ([3 x i8], [3 x i8]* @.io.int, i32 0, "
                << "i32 0), " << exp->exp_type()->llvm_type_name() << " " << ref
                << ")\n";
-        } else if (exp->exp_type() == t_id::named("str")) {
+        } else if (exp->exp_type() == t_namespace::get_id("str")) {
             //TODO
         } else {
             //TODO imprimir error write no soporta cosas que no sean builtin

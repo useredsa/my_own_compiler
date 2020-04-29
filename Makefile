@@ -84,9 +84,6 @@ run : $(TARGET) tests/example_program3.mp
 	./$(TARGET) < tests/example_program3.mp
 	cat bin/a.llvm
 	llvm-as < $(BIND)/a.llvm > $(BIND)/a.bc
-	llc $(BIND)/a.bc
-	gcc $(BIND)/a.s -o $(BIND)/a.out
-	#llvm-as-6.0 < $(BIND)/a.llvm > $(BIND)/a.bc
-	#clang $(BIND)/a.bc -o $(BIND)/a.out
+	clang $(BIND)/a.bc -o $(BIND)/a.out
 	./$(BIND)/a.out
 

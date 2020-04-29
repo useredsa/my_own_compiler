@@ -66,10 +66,7 @@ class t_constants : public std::vector<t_constant*> {
  */
 class t_id : public t_expression {
   public:
-    /**
-     * @brief Gets the t_id object associated with a name or creates one.
-     */
-    static t_id* named(const std::string& name);
+    t_id(const std::string& name);
 
     inline const std::string& name() {
         return name_;
@@ -191,8 +188,6 @@ class t_id : public t_expression {
 
     static std::vector<t_id*> program_identifiers;
     static std::unordered_map<std::string, t_id*>* identifiers_look_up;
-
-    t_id(const std::string& name);
 };
 
 }  // namespace AST

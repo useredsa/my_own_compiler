@@ -1,6 +1,6 @@
 #include "types.hpp"
 
-#include "identifiers.hpp"
+#include "namespace.hpp"
 #include "function.hpp"
 
 namespace AST {
@@ -12,9 +12,9 @@ const std::string t_type_int::llvm_name_ = "i32";
 class t_int_plus_operator : public t_function {
   public:
     t_int_plus_operator() : t_function(t_int(),
-                                       t_id::named("operator+"),
-                                       {{t_int(), t_id::named(".lhs")},
-                                        {t_int(), t_id::named(".rhs")}},
+                                       t_namespace::get_id("operator+"),
+                                       {{t_int(), t_namespace::get_id(".lhs")},
+                                        {t_int(), t_namespace::get_id(".rhs")}},
                                        nullptr,
                                        nullptr) {  }
     
@@ -32,10 +32,10 @@ class t_int_plus_operator : public t_function {
 const std::string t_type_str::llvm_name_ = "i8*";
 
 void llvm_register_types() {
-    t_id::named("integer")->register_as_type(new t_type_int()); //TODO por dios que alguien llame int a integer!!!!
+    t_namespace::get_id("integer")->register_as_type(new t_type_int()); //TODO por dios que alguien llame int a integer!!!!
     new t_int_plus_operator(); //TODO las funciones se registran solas lo cual es raro
     
-    t_id::named("str")->register_as_type(new t_type_str());
+    t_namespace::get_id("str")->register_as_type(new t_type_str());
 }
 
 } // namespace builtin

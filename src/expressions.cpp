@@ -1,13 +1,14 @@
 #include "expressions.hpp"
 
 #include "errors.hpp"
+#include "namespace.hpp"
 
 namespace AST {
 
 t_int_lit::t_int_lit(int lit) : lit_(lit) {  }
 
 t_id* t_int_lit::exp_type() {
-    return t_id::named("integer");
+    return t_namespace::get_id("integer");
 }
 
 std::string t_int_lit::llvm_eval(std::ostream& os, int& local_var_count) {
@@ -22,7 +23,7 @@ void t_int_lit::print(int lvl) {
 t_str_lit::t_str_lit(std::string *lit) : lit_(lit) {  }
 
 t_id* t_str_lit::exp_type() {
-    return t_id::named("str");
+    return t_namespace::get_id("str");
 }
 
 std::string t_str_lit::llvm_eval(std::ostream& os, int& local_var_count) {
@@ -58,7 +59,7 @@ t_unary_op::t_unary_op(const valid_op op, t_expression *exp)
     : op_(op), exp_(exp) {  }
 
 t_id* t_unary_op::exp_type() {
-    return t_id::named("integer"); //TODO
+    return t_namespace::get_id("integer"); //TODO
 }
 
 std::string t_unary_op::llvm_eval(std::ostream& os, int& local_var_count) {
@@ -97,11 +98,11 @@ t_binary_op::t_binary_op(const valid_op op, t_expression *lhs, t_expression *rhs
     op_(op), l_(lhs), r_(rhs) {    }
 
 t_id* t_binary_op::exp_type() {
-    return t_id::named("integer"); //TODO
+    return t_namespace::get_id("integer"); //TODO
 }
 
 std::string t_binary_op::llvm_eval(std::ostream& os, int& local_var_count) {
-    t_function* func = t_id::named("operator+")->
+    t_function* func = t_namespace::get_id("operator+")->
                          can_be_called({l_->exp_type(), r_->exp_type()});
     if (func == nullptr) {
         //TODO otro error

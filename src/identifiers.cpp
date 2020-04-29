@@ -7,21 +7,6 @@
 
 namespace AST {
 
-std::vector<t_id*> t_id::program_identifiers{};
-//TODO peligro de usar named en inicialización
-std::unordered_map<std::string, t_id*>* t_id::identifiers_look_up = nullptr;
-
-t_id* t_id::named(const std::string& name) {
-    if (identifiers_look_up == nullptr)
-        identifiers_look_up = new std::unordered_map<std::string, t_id*>();
-    t_id*& ptr = (*identifiers_look_up)[name];
-    if (ptr == nullptr) {
-        ptr = new t_id(name);
-        program_identifiers.push_back(ptr);
-    }
-    return ptr;
-}
-
 t_id::t_id(const std::string& name) : name_(name), obj_type_(UNDECLARED) {  }
 
 bool t_id::register_function(t_function* func) {

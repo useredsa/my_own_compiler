@@ -133,14 +133,14 @@ read                                return READ;
 ({letter}|_)({letter}|{digit}|_){0,15}    {
                                             string* lexem = new string(yytext, yyleng);
                                             yylval.name = lexem;
-                                            return ID;
+                                            return NAME;
                                           }
 
 ({letter}|_)({letter}|{digit}|_){16,16}   {
                                             yyless(16);
                                             logerr("Oversized identifier (using: %16s)", yytext);
                                             BEGIN(LARGE_ID_COND); //TODO devolver algo?
-                                            return ID;
+                                            return NAME;
                                           }
 <LARGE_ID_COND>({letter}|{digit}|_)       ;
 <LARGE_ID_COND>.                          { yyless(0); BEGIN(INITIAL); }

@@ -3,6 +3,7 @@
 #include <string>
 #include "ast.hpp"
 #include "builtin.hpp"
+#include "namespace.hpp"
 using namespace std; //TODO remove
 using namespace AST;
 
@@ -36,7 +37,7 @@ t_program* ast_root;
 %token WRITE     "write"
 %token READ      "read"
 // Operators
-%token ID        "id"
+%token NAME      "name"
 %token SEMICOL   ";"
 %token COLON     ":"
 %token DOT       "."
@@ -61,33 +62,36 @@ t_program* ast_root;
 %start program
 %define parse.error verbose
 
-%type <intlit> "int_lit"
-%type <strlit> "str_lit"
-%type <func>   function
-%type <funcs>  functions
-%type <decls>  declarations
-%type <sttm>   statement
-%type <sttms>  statements
-%type <sttms>  compound_statement
-%type <consts> constants
-%type <sttms>  optional_statements
-%type <exp>    expression
-%type <exps>   expressions
-%type <assig>  assignment
-%type <exp>    print_item
-%type <exps>   print_list
-%type <id>     read_item
-%type <ids>    read_list
-%type <exps>   arguments
-%type <name>   "id"
-%type <id>     name
-%type <ids>    names //TODO volver a cambiar a id
-%type <id>     type
+%type <intlit>   "int_lit"
+%type <strlit>   "str_lit"
+%type <func>     function
+%type <funcs>    functions
+%type <decls>    declarations
+%type <sttm>     statement
+%type <sttms>    statements
+%type <sttms>    compound_statement
+%type <consts>   constants
+%type <sttms>    optional_statements
+%type <exp>      expression
+%type <exps>     expressions
+%type <assig>    assignment
+%type <exp>      print_item
+%type <exps>     print_list
+%type <id>       read_item
+%type <ids>      read_list
+%type <exps>     arguments
+%type <name>     "name"
+%type <id>       dcl_id
+%type <id>       undcl_id
+%type <ids>      undcl_ids
+%type <unr_name> unresolved_name
+%type <id>       type
 
 %code requires {
     #include <iostream>
     #include <string>
     #include "ast.hpp"
+    #include "namespace.hpp"
     using namespace AST;
 }
 
@@ -106,6 +110,7 @@ t_program* ast_root;
     std::string*    name;
     t_id*           id;
     std::vector<t_id*>*         ids;
+    t_unresolved_name*          unr_name;
     std::vector<t_expression*>* args;
 }
 
@@ -116,7 +121,7 @@ t_program* ast_root;
 %% /* Production Rules */
 
 program:
-    "program" "id" "(" ")" ";" functions declarations compound_statement "." {
+    "program" "name" "(" ")" ";" functions declarations compound_statement "." {
         ast_root = new t_program($6, $7, $8);
         // std::cout << "program!\n";
     }
@@ -137,17 +142,21 @@ functions:
     }
     ;
 
-function: 
-    "function" name "(" "const" names ":" type ")" ":" type
-    declarations
-    compound_statement {
+function:
+    {
+        t_namespace* namesp = t_namespace::create();
+        t_namespace::switch_namespace(namesp);
+    }
+    "function" undcl_id "(" "const" undcl_ids ":" type ")" ":" type
+    declarations compound_statement {
         std::vector<std::pair<t_id*, t_id*>> args;
-        args.reserve($5->size());
-        for (t_id* id : *$5) {
-            args.emplace_back(id, $7);
+        args.reserve($6->size());
+        for (t_id* id : *$6) {
+            args.emplace_back(id, $8);
         }
-        $$ = new t_function($2, $10, args, $11, $12);
-        //TODO free $5
+        $$ = new t_function($3, $11, args, $12, $13);
+        t_namespace::switch_to_parent_namespace();
+        //TODO free $6
     }
     |
     error declarations compound_statement {
@@ -156,7 +165,7 @@ function:
     ;
 
 declarations:
-    declarations "var" names ":" type ";" {
+    declarations "var" undcl_ids ":" type ";" {
         $$ = $1;
         $$->add_identifiers(*$3, $5);
         // free($3);
@@ -219,7 +228,7 @@ statement:
         $$ = new t_while_statement($2, $4);
     }
     |
-    "for" name ":=" expression "to"
+    "for" undcl_id ":=" expression "to"
     expression "do" statement {
         $$ = new t_for_statement($2, $4, $6, $8);
     }
@@ -238,7 +247,7 @@ statement:
     ;
 
 assignment:
-    name ":=" expression {
+    dcl_id ":=" expression {
         $$ = new t_assignment($1, $3);
     }
     ;
@@ -278,7 +287,7 @@ expression:
     "(" expression ")" {
         $$ = $2;
     }
-    | name {
+    | dcl_id {
         $$ = $1;
     }
     |
@@ -286,7 +295,7 @@ expression:
         $$ = new t_int_lit($1);
     }
     |
-    name "(" arguments ")" {
+    unresolved_name "(" arguments ")" {
         //TODO
     }
     ;
@@ -302,20 +311,9 @@ arguments:
     }
     ;
 
-names:
-    names "," name {
-        $$->push_back($3);
-    }
-    |
-    name {
-        $$ = new std::vector<t_id*>();
-        $$->push_back($1);
-    }
-    ;
-
 type:
     "integer" {
-        $$ = t_id::named("integer");
+        $$ = t_namespace::get_id("integer");
     }
     ;
 
@@ -365,16 +363,39 @@ read_list:
     ;
 
 read_item: //TODO considerar quitar ya que está name
-    name {
+    dcl_id {
         $$ = $1;
     }
     ;
 
 // Additions to the grammar
-name:
-    "id" {
-        $$ = t_id::named(*$1);
-        //TODO free?
+undcl_id:
+    "name" {
+        $$ = t_namespace::new_id(*$1);
+        //TOOD free?
+    }
+    ;
+
+dcl_id:
+    "name" {
+        $$ = t_namespace::get_id(*$1);
+    }
+    ;
+
+unresolved_name:
+    "name" {
+        $$ = t_namespace::pending_id(*$1); //TODO hay que revisar su uso
+    }
+    ;
+
+undcl_ids:
+    undcl_ids "," undcl_id {
+        $$->push_back($3);
+    }
+    |
+    undcl_id {
+        $$ = new std::vector<t_id*>();
+        $$->push_back($1);
     }
     ;
 

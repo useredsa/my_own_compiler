@@ -5,6 +5,7 @@
 #include <string>
 #include "type.hpp"
 #include "identifiers.hpp"
+#include "namespace.hpp"
 
 namespace AST {
 
@@ -13,7 +14,7 @@ namespace builtin {
 inline t_id* t_int() {
     static t_id* ptr = nullptr;
     if (ptr == nullptr)
-        ptr = t_id::named("integer");
+        ptr = t_namespace::get_id("integer");
     return ptr;
 }
 
@@ -30,7 +31,7 @@ class t_type_int : public t_type { //TODO transform to singleton?
 inline t_id* t_str() {
     static t_id* ptr = nullptr;
     if (ptr == nullptr)
-        ptr = t_id::named("str");
+        ptr = t_namespace::get_id("str");
     return ptr;
 }
 
