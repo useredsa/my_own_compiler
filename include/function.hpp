@@ -7,30 +7,33 @@
 #include "type.hpp"
 #include "statement.hpp"
 
-namespace AST {
+namespace compiler {
+    
+namespace ast {
 
-// Because of circular dependencies, some declarations are needed.
-class t_id;
-class t_int_lit;
+class Id;
+struct IntLit;
 
 /**
  * @brief A list of declarations of constants and/or variables
  * 
  * //TODO
  */
-class t_declarations {
-  public:
-    t_declarations() : constants_(), variables_() {  }
+struct Dcls {
+    std::vector<Id*> constants;
+    std::vector<Id*> variables;
+
+    Dcls() : constants(), variables() {  }
 
     /**
      * @brief Adds a list of constants declarations
      */
-    void add_constants(const std::vector<std::pair<t_id*, t_int_lit*>>&  cons);
+    void AddConstants(const std::vector<std::pair<Id*, IntLit*>>&  cons);
 
     /**
      * @brief Adds a list of variables declarations? //TODO Por qué identifiers?
      */
-    void add_identifiers(const std::vector<t_id*>& ids, t_id* type);
+    void AddIdentifiers(const std::vector<Id*>& ids, Id* type);
 
     //TODO
     void llvm_put_constants(std::ostream& os);
@@ -39,10 +42,6 @@ class t_declarations {
     void llvm_put_variables(std::ostream& os);
 
     void print(int lvl);
-
-  private:
-    std::vector<t_id*> constants_;
-    std::vector<t_id*> variables_;
 };
 
 /**
@@ -50,16 +49,24 @@ class t_declarations {
  * 
  * A class that represents the declaration and implementation of a function.
  */
-class t_function {
+class Function {
   public:
-    t_function(t_id* type,
-               t_id* name,
-               const std::vector<std::pair<t_id*, t_id*>>& args,
-               t_declarations* decls,
-               t_statements* statements);
+    Function(Id* type,
+             Id* name,
+             const std::vector<std::pair<Id*, Id*>>& args,
+             Dcls* dcls,
+             Stmts* statements);
 
-    inline const std::vector<t_id*>& signature() const { //TODO buscar otros getters y hacerlos const
+    inline const std::vector<Id*>& signature() const { //TODO buscar otros getters y hacerlos const
         return signature_;
+    }
+
+    inline const std::string& name() {
+        return name_;
+    }
+
+    inline Id* type() {
+        return type_;
     }
 
     void llvm_put(std::ostream& os);
@@ -72,19 +79,21 @@ class t_function {
     void print(int lvl);
 
   private:
-    t_id* type_;
+    Id* type_;
     const std::string& name_;
-    std::vector<t_id*> args_;
-    std::vector<t_id*> signature_;
-    t_declarations* declarations_;
-    t_statements* statements_;
+    std::vector<Id*> args_;
+    std::vector<Id*> signature_;
+    Dcls* dcls_;
+    Stmts* statements_;
 };
 
-class t_functions : public std::vector<t_function*> {
+class Functions : public std::vector<Function*> {
 
 };
 
-}  // namespace AST
+} // namespace ast
+
+} // namespace compiler
 
 #endif // FUNCTION_HPP
 

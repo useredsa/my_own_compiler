@@ -8,103 +8,81 @@
 #include "expressions.hpp"
 #include "identifiers.hpp"
 
-namespace AST {
+namespace compiler {
 
-class t_assignment : public t_statement {
-  public:
-    t_assignment(t_id* id, t_expression *exp) : id_(id), exp_(exp) {  }
+namespace ast {
 
-    void llvm_put(std::ostream& os, int& local_var_count);
+struct Assig  : public IStmt {
+    Id* id;
+    IExp* exp;
 
-    void print(int lvl);
-
-  private:
-    t_id* id_;
-    t_expression *exp_;
-};
-
-class t_if_then_statement : public t_statement {
-  public:
-    t_if_then_statement(t_expression *cond, t_statement *conseq)
-            : cond_(cond), conseq_(conseq) {  }
+    Assig (Id* id, IExp* exp) : id(id), exp(exp) {  }
 
     void llvm_put(std::ostream& os, int& local_var_count);
 
     void print(int lvl);
-
-  private:
-    t_expression* cond_;
-    t_statement* conseq_;
 };
 
-class t_if_then_else_statement : public t_if_then_statement {
-  public:
-    t_if_then_else_statement(t_expression *cond, t_statement *conseq,
-                             t_statement *alt)
-            : t_if_then_statement(cond, conseq), alternative_(alt) {  }
+struct IfStmt : public IStmt {
+    IExp* exp;
+    IStmt* stmt;
+    IStmt* alt_stmt;
+
+    IfStmt(IExp* exp, IStmt* stmt, IStmt* alt_stmt = nullptr)
+            : exp(exp), stmt(stmt), alt_stmt(alt_stmt) {  }
 
     void llvm_put(std::ostream& os, int& local_var_count);
 
     void print(int lvl);
-  
-  private:
-    t_statement *alternative_;
 };
 
-class t_while_statement : public t_statement {
-  public:
-    t_while_statement(t_expression *cond, t_statement *statement)
-            : cond_(cond), statement_(statement) {  }
+struct WhileStmt : public IStmt {
+    IExp* exp;
+    IStmt* stmt;
+    WhileStmt(IExp *exp, IStmt* stmt)
+            : exp(exp), stmt(stmt) {  }
 
     void llvm_put(std::ostream& os, int& local_var_count);
 
     void print(int lvl);
-  
-  private:
-    t_expression *cond_;
-    t_statement *statement_;
 };
 
-class t_for_statement : public t_statement {
-  public:
-    t_for_statement(t_id* ctrl_id, t_expression *begin, t_expression *end,
-                    t_statement *statement);
+struct ForStmt : public IStmt {
+    Id* id;  //TODO Implement scoping?
+    IExp* start_exp;
+    IExp* end_exp;
+    IStmt* stmt;
+
+    ForStmt(Id* id, IExp* start_exp, IExp* end_exp, IStmt* stmt);
 
     void llvm_put(std::ostream& os, int& local_var_count);
 
     void print(int lvl);
-  
-  private:
-    t_id* control_id_;  //TODO Implement scoping?
-    t_expression *begin_, *end_;
-    t_statement *statement_;
 };
 
-class t_write : public t_statement {
-  public:
-    t_write(t_expressions* exps) : exps(exps) {  }
+struct WriteStmt : public IStmt {
+    Exps* exps;
+
+    WriteStmt(Exps* exps) : exps(exps) {  }
 
     void llvm_put(std::ostream& os, int& local_var_count);
 
     void print(int lvl);
-    
-  private:
-    t_expressions* exps;
 };
 
-class t_read : public t_statement {
-  public:
-    t_read(std::vector<t_id*>* ids) : ids(ids) {  }
+struct ReadStmt : public IStmt {
+    std::vector<Id*>* ids;
+
+    ReadStmt(std::vector<Id*>* ids) : ids(ids) {  }
 
     void llvm_put(std::ostream& os, int& local_var_count);
 
     void print(int lvl);
-    
-  private:
-    std::vector<t_id*>* ids;
 };
 
-}  // namespace AST
+} // namespace ast
+
+} // namespace compiler
 
 #endif // STATEMENTS_HPP
 

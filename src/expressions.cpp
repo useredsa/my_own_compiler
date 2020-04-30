@@ -2,126 +2,132 @@
 
 #include "errors.hpp"
 #include "namespace.hpp"
+#include "function.hpp"
 
-namespace AST {
+using std::vector;
+using std::string;
 
-t_int_lit::t_int_lit(int lit) : lit_(lit) {  }
+namespace compiler {
 
-t_id* t_int_lit::exp_type() {
-    return t_namespace::get_id("integer");
+namespace ast {
+
+Id* IntLit::exp_type() {
+    return identifiers::GetId("integer");
 }
 
-std::string t_int_lit::llvm_eval(std::ostream& os, int& local_var_count) {
-    return std::to_string(lit_);
+string IntLit::llvm_eval(std::ostream& os, int& local_var_count) {
+    return std::to_string(lit);
 }
 
-void t_int_lit::print(int lvl) {
-    std::cout << std::string(lvl, '\t') << "int_lit: " << lit_ << '\n';
+void IntLit::print(int lvl) {
+    std::cout << string(lvl, '\t') << "int_lit: " << lit << '\n';
 }
 
 
-t_str_lit::t_str_lit(std::string *lit) : lit_(lit) {  }
-
-t_id* t_str_lit::exp_type() {
-    return t_namespace::get_id("str");
+Id* StrLit::exp_type() {
+    return identifiers::GetId("str");
 }
 
-std::string t_str_lit::llvm_eval(std::ostream& os, int& local_var_count) {
+string StrLit::llvm_eval(std::ostream& os, int& local_var_count) {
     return "getelementptr inbounds ([4 x i8], [4 x i8]* " + llvm_id_
             + ", i32 0, i32 0)";
 }
 
-void t_str_lit::print(int lvl) {
-    std::cout << std::string(lvl, '\t') << "str_lit: " << *lit_ << '\n';
+void StrLit::print(int lvl) {
+    std::cout << string(lvl, '\t') << "str_lit: " << *lit << '\n';
 }
 
-// t_function_call::t_function_call(t_name* object, t_expressions* args)
+// FuncCall::FuncCall(t_name* object, t_expressions* args)
 //     : object(object), args(args) {  } //TODO ya está en el hpp
 
-t_id* t_function_call::exp_type() {
-    // return name->; //TODO construir la signatura con los argumentos y devolver el tipo de la función
-    return name_->exp_type(); //TODO esto es para variables no funciones
+Id* FuncCall::exp_type() {
+    //TODO las funciones no se pueden resolver con el Id porque eso apunta al mayor namespace
+    // que contiene esa función pero puede haber otros debajo con el mismo nombre de función
+    // y otros atributos :/.
+    vector<Id*> signature(args->size());
+    for (int i = 0; i < (int) args->size(); ++i) {
+        signature[i] = (*args)[i]->exp_type();
+    }
+    Function* func = id->can_be_called(signature);
+    assert(func != nullptr);
+    if (func == nullptr) {
+        //TODO error
+    } 
+    return func->type(); //TODO esto es para variables no funciones
 }
 
-std::string t_function_call::llvm_eval(std::ostream& os, int& local_var_count) {
-    //TODO
-    return "TODO";
+string FuncCall::llvm_eval(std::ostream& os, int& local_var_count) {
+    vector<Id*> signature(args->size());
+    vector<string> exp_ress;
+    for (int i = 0; i < (int) args->size(); ++i) {
+        signature[i] = (*args)[i]->exp_type();
+        exp_ress.push_back((*args)[i]->llvm_eval(os, local_var_count));
+    }
+    Function* func = id->can_be_called(signature);
+    assert(func != nullptr);
+    string ref = "%" + std::to_string(local_var_count++);
+    os << "\t" << ref << " = call " << func->type()->llvm_type_name() << " @" << func->name()
+       << "(";
+    for (int i = 0; i < (int) args->size(); ++i) {
+        if (i)
+            os << ", ";
+        os << signature[i]->llvm_type_name() << " " << exp_ress[i];
+    }
+    os << ")\n";
+    return ref;
 }
 
-void t_function_call::print(int lvl) {
-    std::cout << std::string(lvl, '\t') << "call to " << "TODO\n";
-    for (auto arg : *args_) {
-        args_->print(lvl+1);
+void FuncCall::print(int lvl) {
+    std::cout << string(lvl, '\t') << "call to " << id->name() << "\n";
+    for (auto arg : *args) {
+        args->print(lvl+1);
     }
 }
 
-t_unary_op::t_unary_op(const valid_op op, t_expression *exp)
-    : op_(op), exp_(exp) {  }
-
-t_id* t_unary_op::exp_type() {
-    return t_namespace::get_id("integer"); //TODO
+Id* UnaOp::exp_type() {
+    return identifiers::GetId("integer"); //TODO
 }
 
-std::string t_unary_op::llvm_eval(std::ostream& os, int& local_var_count) {
+string UnaOp::llvm_eval(std::ostream& os, int& local_var_count) {
     //TODO
     return "TODO";
 }
 
-void t_unary_op::print(int lvl) {
-    std::string tabs(lvl, '\t');
-    std::cout << tabs << "t_unary_op:\n";
+void UnaOp::print(int lvl) {
+    string tabs(lvl, '\t');
+    std::cout << tabs << "UnaOp:\n";
     std::cout << tabs << "\t-\n";
-    exp_->print(lvl+1);
+    exp->print(lvl+1);
     std::cout << '\n';
 }
 
-std::string t_binary_op::op_string(valid_op op) {
-    switch (op) {
-        case plus:
-        return "+";
-        break;
-        case minus:
-        return "-";
-        break;
-        case asterisk:
-        return "*";
-        break;
-        case slash:
-        return "/";
-        break;
-        default:
-        return "UNRECOGNIZED OP";
-    }
+Id* BinOp::exp_type() {
+    return identifiers::GetId("integer"); //TODO
 }
 
-t_binary_op::t_binary_op(const valid_op op, t_expression *lhs, t_expression *rhs) :
-    op_(op), l_(lhs), r_(rhs) {    }
-
-t_id* t_binary_op::exp_type() {
-    return t_namespace::get_id("integer"); //TODO
-}
-
-std::string t_binary_op::llvm_eval(std::ostream& os, int& local_var_count) {
-    t_function* func = t_namespace::get_id("operator+")->
-                         can_be_called({l_->exp_type(), r_->exp_type()});
+string BinOp::llvm_eval(std::ostream& os, int& local_var_count) {
+    Function* func = identifiers::GetId("operator+")->
+                         can_be_called({lhs->exp_type(), rhs->exp_type()});
     if (func == nullptr) {
         //TODO otro error
         semantic_error << "no existe el operador!\n";
         return "{UNAVAILABLE OPERATOR}";
     }
-    std::string lhs = l_->llvm_eval(os, local_var_count);
-    std::string rhs = r_->llvm_eval(os, local_var_count);
-    return func->llvm_put_call(os, local_var_count, {&lhs, &rhs});
+    string lhs_str = lhs->llvm_eval(os, local_var_count);
+    string rhs_str = rhs->llvm_eval(os, local_var_count);
+    return func->llvm_put_call(os, local_var_count, {&lhs_str, &rhs_str});
 }
 
-void t_binary_op::print(int lvl) {
-    std::string tabs(lvl, '\t');
+void BinOp::print(int lvl) {
+    string tabs(lvl, '\t');
     std::cout << tabs << "t_binary_op:\n";
-    l_->print(lvl+1);
-    std::cout << tabs << '\t' << op_string(op_) << '\n';
-    r_->print(lvl+1);
+    lhs->print(lvl+1);
+    std::cout << tabs << '\t' << (char) op << '\n';
+    rhs->print(lvl+1);
     std::cout << '\n';
 }
 
-} // namespace AST
+} // namespace ast
+
+} // namespace compiler
 

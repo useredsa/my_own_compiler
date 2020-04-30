@@ -2,35 +2,35 @@
 
 #include "errors.hpp"
 
-namespace AST {
+namespace compiler {
 
-void t_declarations::add_constants(
-        const std::vector<std::pair<t_id*, t_int_lit*>>&  cons) {
+namespace ast {
+
+void Dcls::AddConstants(const std::vector<std::pair<Id*, IntLit*>>&  cons) {
     for (auto [id, val] : cons) {
-        if (!id->register_as_constant(val)) {
+        if (!id->RegisterAsConstant(val)) {
             //TODO semantic_error << "ERROR..."
         }
-        constants_.push_back(id);
+        constants.push_back(id);
     }
 }
 
-void t_declarations::add_identifiers(
-        const std::vector<t_id*>& ids, t_id* type) {
-    for (t_id* id : ids) {
-        if (!id->register_as_variable(type)) {
+void Dcls::AddIdentifiers(const std::vector<Id*>& ids, Id* type) {
+    for (Id* id : ids) {
+        if (!id->RegisterAsVariable(type)) {
             semantic_error << "ERROR: identifier " <<  id->name() << " already in use. Unavailable to define as a variable\n";
         }
-        variables_.push_back(id);
+        variables.push_back(id);
     }
 }
 
-void t_declarations::llvm_put_constants(std::ostream& os) {
+void Dcls::llvm_put_constants(std::ostream& os) {
     
 }
 
-void t_declarations::llvm_put_variables(std::ostream& os) {
-    for (t_id* id : variables_) {
-        if (not id->is_a_variable()) {
+void Dcls::llvm_put_variables(std::ostream& os) {
+    for (Id* id : variables) {
+        if (not id->IsAVariable()) {
             semantic_error << "ERROR: not a variable!\n"; //TODO
             continue;
         }
@@ -38,73 +38,92 @@ void t_declarations::llvm_put_variables(std::ostream& os) {
     }
 }
 
-void t_declarations::print(int lvl) {
+void Dcls::print(int lvl) {
     std::string tabs(lvl, '\t');
     std::cout << tabs << "declarations:\n";
     std::cout << tabs << "\tconstants\n";
-    for (auto c : constants_) {
+    for (auto c : constants) {
         c->print(lvl+2);
     }
     std::cout << tabs << "\tvariables\n";
-    for (auto v : variables_) {
+    for (auto v : variables) {
         v->print(lvl+2);
     }
 }
 
-t_function::t_function(t_id* type,
-                       t_id* name,
-                       const std::vector<std::pair<t_id*, t_id*>>& args,
-                       t_declarations* decls,
-                       t_statements* statements) :
-                       type_(type),
-                       name_(name->name()),
-                       args_(),
-                       signature_(),
-                       declarations_(decls),
-                       statements_(statements)
+Function::Function(Id* type,
+                   Id* name,
+                   const std::vector<std::pair<Id*, Id*>>& args,
+                   Dcls* dcls,
+                   Stmts* statements)
+        : type_(type),
+          name_(name->name()),
+          args_(),
+          signature_(),
+          dcls_(dcls),
+          statements_(statements)
 {
     for (auto [type, id] : args) {
+        id->RegisterAsVariable(type);
         signature_.push_back(type);
         args_.push_back(id);
     }
     // Important: Register after construction is finished
-    if (!name->register_function(this)) {
+    if (!name->RegisterFunction(this)) {
         //TODO semantic_error << "ERROR: the function cannot be named " << name << " a variable or a function with the same signature is registered with that name\n";
     }
 }
 
-void t_function::llvm_put(std::ostream& os) {
-    declarations_->llvm_put_constants(os);
-    os << ";Function\n";
-    os << "define i32 @" << "main" << "() {\n"; //TODO include signature
-    int local_var_count = 1;
-    declarations_->llvm_put_variables(os);
+void Function::llvm_put(std::ostream& os) {
+    dcls_->llvm_put_constants(os);
+    os << "; Function\n";
+    os << "define i32 @" << name_ << "(";
+    for (int i = 0; i < (int) signature_.size(); ++i) {
+        if (i)
+            os << ", ";
+        os << signature_[i]->llvm_type_name();
+    }
+    os << ") {\n";
+    for (int i = 0; i < (int) signature_.size(); ++i) {
+        os << "\t%" << args_[i]->name() << " = alloca " << signature_[i]->llvm_type_name()
+           << ", align 4\n";
+    }
+    for (int i = 0; i < (int) signature_.size(); ++i) {
+        os << "\tstore " << signature_[i]->llvm_type_name() << " %" << i << ", "
+           << signature_[i]->llvm_type_name() << "* %" << args_[i]->name() << ", align 4\n";
+    }
+    int local_var_count = 1+signature_.size();
+    dcls_->llvm_put_variables(os);
     statements_->llvm_put(os, local_var_count);
     os << "\tret i32 0\n"; //TODO return type!
     os << "}\n\n";
 }
 
 //TODO considerar usar using std::string porque es horrible escribir estos nombres
-std::string t_function::llvm_put_call(std::ostream& os,
+std::string Function::llvm_put_call(std::ostream& os,
                                       int& local_var_count,
                                       std::vector<std::string*> params) {
     return "TODO";
 }
 
-void t_function::print(int lvl) {
+void Function::print(int lvl) {
     std::string tabs(lvl, '\t');
-    std::cout << tabs << "function " /*<< id_data[id]*/ << '\n';
+    std::cout << tabs << "function " << name_ << '\n';
     std::cout << tabs << "\treturn type:\n";
     type_->print(lvl+1);
     // for (auto arg : args_) {
     //     arg->print(lvl+2);
     // } //TODO
     std::cout << tabs << "\tsignature:\n";
-    for (t_id* id : signature_) {
+    for (Id* id : signature_) {
         id->print(lvl+1);
     }
+    std::cout << tabs << "\tdeclarations\n";
+    dcls_->print(lvl+1);
     std::cout << tabs << "\tstatements:\n";
     statements_->print(lvl+1);
 }
 
-}  // namespace AST
+} // namespace ast
+
+} // namespace compiler

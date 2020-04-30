@@ -2,15 +2,21 @@
 
 #include "types.hpp"
 
-namespace AST {
+namespace compiler {
+
+namespace ast {
 
 namespace builtin {
 
-void llvm_register_builtins() {
-    llvm_register_types();
+void RegisterBuiltins() {
+    identifiers::AddNameScope(kAcronological);
+    RegisterTypes();
+    identifiers::NewId("main");
 }
 
 } // namespace builtin
 
-} // namespace AST
+} // namespace ast
+
+} // namespace compiler
 

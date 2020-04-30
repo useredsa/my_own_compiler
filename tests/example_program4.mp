@@ -1,0 +1,25 @@
+(********************************
+ * Fichero de funcionalidad n 1 *
+ ********************************)
+program test1 ();
+
+function foo(const bar : integer) : integer
+begin
+    write(bar)
+end;
+
+var a : integer;
+
+begin
+    read(a);
+    if (a) then
+        for i := 1+0 to 2+3 do
+        begin
+            write(a)
+            a := a + 1;
+        end
+    else
+        a := foo(a)
+end.
+
+

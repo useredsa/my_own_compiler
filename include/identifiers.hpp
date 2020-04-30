@@ -5,69 +5,88 @@
 
 #include <string>
 #include <vector>
-#include <unordered_map>
 
-#include "function.hpp"
 #include "type.hpp"
 #include "expression.hpp"
 
-namespace AST {
+namespace compiler {
 
-// Needed because of circular dependencies
-class t_int_lit;
-class t_function;
+namespace ast {
+
+struct Function;
+struct IntLit;
+class Id;
 
 /**
  * @brief Intrinsec data to a variable
  */
-class t_var { //TODO considerar poner como struct
-  public:
-    t_var(std::string& name, t_id* type) : name_(name), type_(type) {  }
-
-    inline t_id* type() {
-        return type_;
-    }
-
-  private:
-    std::string& name_;
-    t_id* type_;
+struct Var {
+    Id* id;
+    Id* type;
+    Var(Id* id, Id* type) : id(id), type(type) {  }
 };
 
 /**
  * @brief Intrinsec data to a constant
  */
-class t_constant {
-  public:
-    t_constant(std::string& name, t_int_lit* val) : name_(name), val_(val) {  }
-    
-    inline t_id* type() {
-        return type_;
-    }
+struct Constant {
+    Id* id;
+    IntLit* val;
 
-  private:
-    std::string& name_;
-    t_id* type_;
-    t_int_lit* val_;
+    Constant(Id* id, IntLit* val) : id(id), val(val) {  }
 };
 
-class t_constants : public std::vector<t_constant*> {
+struct Constants : public std::vector<Constant*> {  }; //TODO remove or put in another file?
 
+enum NameScopeType {
+    kCronological,
+    kAcronological
+};
+
+/**
+ * @brief Name scope object.
+ * 
+ * Comparable by address.
+ */
+struct NameScope {
+    NameScope* parent;
+    NameScopeType type;
+};
+
+/**
+ * @brief Language abstractions that can be declared or named
+ */
+enum NamedAbstractions {
+    kUnresolved,
+    kRedirected,
+    kType,
+    kVariable,
+    kConstant,
+    kFunctions
 };
 
 /**
  * @brief An identifier.
  * 
- * A name that represents a type/variable/constant/function(s).
-
- * It is important to differentiate between t_id and t_var (or t_type or
- * t_function) and variable. The identifier t_id is just the name (with
- * the data associated), while the variable t_var is represents the use
- * of a variable, as lvalue or rvalue. //TODO
+ * A name that represents a named abstraction (see NamedAbstractions).
+ *
+ * It is important to differentiate between Itd and Var (or Type or
+ * Function). The identifier (Id) is just the name (with the data
+ * associated to the name itself), while the variable (Var) hols the
+ * information of a variable.
  */
-class t_id : public t_expression {
+class Id : public ast::IExp {
   public:
-    t_id(const std::string& name);
 
+    Id(NameScope* scope, const std::string& name)
+        : scope_(scope), name_(name), abstracts_(kUnresolved), ref() {  }
+
+    ~Id();
+    
+    inline NameScope* namescope() {
+        return scope_;
+    }
+    
     inline const std::string& name() {
         return name_;
     }
@@ -80,7 +99,7 @@ class t_id : public t_expression {
      * 
      * @returns if the function was registered.
      */
-    bool register_function(t_function* func);
+    bool RegisterFunction(ast::Function* func);
 
     /**
      * @brief Associates a var with this id.
@@ -90,7 +109,7 @@ class t_id : public t_expression {
      * 
      * @returns if the var was registered.
      */
-    bool register_as_variable(t_id* type);
+    bool RegisterAsVariable(Id* type);
 
     /**
      * @brief Associates a constant with this id.
@@ -100,7 +119,7 @@ class t_id : public t_expression {
      * 
      * @returns if the constant was registered.
      */
-    bool register_as_constant(t_int_lit* val);
+    bool RegisterAsConstant(IntLit* val);
 
     /**
      * @brief Associates a type with this id.
@@ -110,24 +129,24 @@ class t_id : public t_expression {
      * 
      * @returns if the type was registered.
      */
-    bool register_as_type(t_type* type);
+    bool RegisterAsType(Type* type);
 
     /**
      * @returns the function associated with this identifier or nullptr if there
      * isn't such a function.
      */
-    t_function* can_be_called(const std::vector<t_id*>& signature);
+    ast::Function* can_be_called(const std::vector<Id*>& signature);
 
-    inline bool is_a_variable() {
-        return obj_type_ == VARIABLE;
+    inline bool IsAVariable() {
+        return abstracts_ == kVariable;
     } //TODO considerar hacer estas 3 funciones devolver un puntero
 
-    inline bool is_a_constant() {
-        return obj_type_ == CONSTANT;
+    inline bool IsAConstant() {
+        return abstracts_ == kConstant;
     }
 
-    inline bool is_a_type() {
-        return obj_type_ == TYPE;
+    inline bool IsAType() {
+        return abstracts_ == kType;
     }
 
     /** Methods when behaving as a expression **/
@@ -136,11 +155,11 @@ class t_id : public t_expression {
      * @brief //TODO when behaving as lvalue
      */
     inline std::string llvm_var_name(std::ostream& os, int& local_var_count) {
-        assert(obj_type_ == VARIABLE);
+        assert(abstracts_ == kVariable);
         return "%" + name_;
     }
 
-    virtual t_id* exp_type();
+    virtual Id* exp_type();
 
     /**
      * @brief //TODO rvalue
@@ -152,45 +171,67 @@ class t_id : public t_expression {
     void llvm_var_alloca(std::ostream& os);
 
     inline const std::string& llvm_type_name() {
-        assert(obj_type_ == TYPE);
-        return obj_data_.type->llvm_name();
+        assert(abstracts_ == kType);
+        return ref.type->llvm_name();
     }
 
     void print(int lvl); //TODO marcar que deja de ser virtual
 
   private:
+    NameScope* scope_;
     std::string name_;
+    NamedAbstractions abstracts_;
+    union AbstractionReference {
+        /**
+         * The destruction of non-trivial members
+         * is delegated to the class constructor
+         */
+        Type* type;
+        Var* var;
+        Constant* cons;
+        std::vector<ast::Function*> funcs;
 
-    enum ObjType {
-        UNDECLARED,
-        TYPE,
-        VARIABLE,
-        CONSTANT,
-        FUNCTION
-    };
-    ObjType obj_type_;
-
-    class ObjData {
-      public:
-        std::vector<t_function*> funcs;
-        t_var* var;
-        t_constant* cons;
-        t_type* type;
-
-        ObjData() {
-            //TODO std::memset(this, 0, sizeof(ObjData));
+        AbstractionReference() {
+            type = nullptr;
         }
 
-        ~ObjData() {
-
-        }
-    } obj_data_;
-
-    static std::vector<t_id*> program_identifiers;
-    static std::unordered_map<std::string, t_id*>* identifiers_look_up;
+        ~AbstractionReference() {  }
+    } ref;
 };
 
-}  // namespace AST
+} // namespace ast
+
+
+
+namespace identifiers {
+
+ast::NameScope* current_name_scope();
+
+/**
+ * @brief Creates a new name scope on top of the current one.
+ */
+ast::NameScope* AddNameScope(ast::NameScopeType type = ast::kCronological);
+
+/**
+ * @brief Sets the parent of the current namescope as the current one.
+ */
+void AbandonCurrentNameScope();
+
+/**
+ * @brief Creates an Id for a new name in the current name scope.
+ */
+ast::Id* NewId(const std::string& name);
+
+/**
+ * @brief Gets the Id associated with a name in the CURRENT name scope.
+ * 
+ * Name resolution techniques apply. The Id may be unresolved.
+ */
+ast::Id* GetId(const std::string& name);
+
+} // namespace identifiers
+
+} // namespace compiler
 
 #endif // IDENTIFIERS_HPP
 

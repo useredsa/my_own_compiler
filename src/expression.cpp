@@ -4,19 +4,22 @@
 #include <string>
 #include <vector>
 
-namespace AST {
+namespace compiler {
 
-t_expressions::t_expressions() {    }
+namespace ast {
 
-t_expressions::t_expressions(t_expression *first) {
+Exps::Exps(IExp *first) {
     this->push_back(first);
 }
 
-void t_expressions::print(int lvl) {
+void Exps::print(int lvl) {
     std::cout << std::string(lvl, '\t') << "expressions:\n";
     for (auto exp : *this) {
         exp->print(lvl+1);
     }
 }
 
-}  // namespace AST
+} // namespace ast
+
+} // namespace compiler
+

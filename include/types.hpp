@@ -7,18 +7,20 @@
 #include "identifiers.hpp"
 #include "namespace.hpp"
 
-namespace AST {
+namespace compiler {
+
+namespace ast {
 
 namespace builtin {
 
-inline t_id* t_int() {
-    static t_id* ptr = nullptr;
+inline Id* IntTypeId() {
+    static Id* ptr = nullptr;
     if (ptr == nullptr)
-        ptr = t_namespace::get_id("integer");
+        ptr = identifiers::GetId("integer");
     return ptr;
 }
 
-class t_type_int : public t_type { //TODO transform to singleton?
+class IntType : public Type { //TODO transform to singleton?
   public:
     inline const std::string& llvm_name() {
         return llvm_name_;
@@ -28,14 +30,14 @@ class t_type_int : public t_type { //TODO transform to singleton?
     static const std::string llvm_name_;
 };
 
-inline t_id* t_str() {
-    static t_id* ptr = nullptr;
+inline Id* StrTypeId() {
+    static Id* ptr = nullptr;
     if (ptr == nullptr)
-        ptr = t_namespace::get_id("str");
+        ptr = identifiers::GetId("str");
     return ptr;
 }
 
-class t_type_str : public t_type {
+class StrType : public Type {
   public:
     inline const std::string& llvm_name() {
         return llvm_name_;
@@ -45,11 +47,13 @@ class t_type_str : public t_type {
     static const std::string llvm_name_;
 };
 
-void llvm_register_types();
+void RegisterTypes();
 
 } // namespace builtin
 
-} // namespace AST
+} // namespace ast
+
+} // namespace compiler
 
 #endif // TYPES_HPP
 

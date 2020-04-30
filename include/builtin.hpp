@@ -1,7 +1,9 @@
 #ifndef BUILTIN_HPP
 #define BUILTIN_HPP
 
-namespace AST {
+namespace compiler {
+
+namespace ast {
 
 namespace builtin {
 
@@ -10,11 +12,13 @@ namespace builtin {
  * 
  * //TODO
  */
-void llvm_register_builtins();
+void RegisterBuiltins();
 
 } // namespace builtin
 
-} // namespace AST
+} // namespace ast
+
+} // namespace compiler
 
 #endif // BUILTIN_HPP
 

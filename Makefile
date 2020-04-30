@@ -36,7 +36,7 @@ DEPS=$(patsubst $(SRCD)/%,$(BUILD)/%,$(SRCS:.cpp=.d))
 ### Define compiling process ###
 CXX=g++ # C compiler
 INC=-I $(INCD)
-CXXFLAGS=-Wall -Werror -Wno-unused -std=c++17 # Compile-time flags
+CXXFLAGS=-g -Wall -Werror -Wno-unused -std=c++17 # Compile-time flags
 LDLIBS=
 	
 
@@ -80,8 +80,8 @@ clean:
 cleandep:
 	rm -f $(DEPS)
 
-run : $(TARGET) tests/example_program3.mp
-	./$(TARGET) < tests/example_program3.mp
+run: $(TARGET) tests/example_program4.mp
+	./$(TARGET) < tests/example_program4.mp
 	cat bin/a.llvm
 	llvm-as < $(BIND)/a.llvm > $(BIND)/a.bc
 	clang $(BIND)/a.bc -o $(BIND)/a.out

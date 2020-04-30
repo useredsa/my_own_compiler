@@ -2,16 +2,18 @@
 
 #include <iostream>
 
-namespace AST {
+namespace compiler {
 
-void t_statements::llvm_put(std::ostream& os, int& local_var_count) {
+namespace ast {
+
+void Stmts::llvm_put(std::ostream& os, int& local_var_count) {
     //TODO
     for (auto st : *this) {
         st->llvm_put(os, local_var_count);
     }
 }
 
-void t_statements::print(int lvl) {
+void Stmts::print(int lvl) {
     std::string tabs(lvl, '\t');
     std::cout << tabs << "begin\n";
     for (auto st : *this) {
@@ -20,4 +22,7 @@ void t_statements::print(int lvl) {
     std::cout << tabs << "end\n";
 }
 
-}  // namespace ASTs
+} // namespace ast
+
+} // namespace compiler
+

@@ -6,9 +6,11 @@
 
 #include "type.hpp"
 
-namespace AST {
+namespace compiler {
+    
+namespace ast {
 
-class t_id;
+class Id;
 
 /**
  * @brief An expression
@@ -16,14 +18,15 @@ class t_id;
  * A class that represent an evaluable expression whose
  * value can be printed
  */
-class t_expression /*TODO remove : public t_print_item*/ {
+class IExp {
   public:
     /**
      * @brief Type of the expression
      */
-    virtual t_id *exp_type() = 0;  //TODO This should return t_type?
-    //TODO remove? virtual int reg() = 0;
+    virtual Id* exp_type() = 0;  //TODO This should return t_type?
+
     virtual void print(int lvl) = 0;
+
     /**
      * @brief String value of the expression
      * 
@@ -38,15 +41,17 @@ class t_expression /*TODO remove : public t_print_item*/ {
  * 
  * //TODO Why deserves to be a class?
  */
-class t_expressions : public std::vector<t_expression*> {
+class Exps : public std::vector<IExp*> {
   public:
-    t_expressions();
+    Exps() {  };
 
-    t_expressions(t_expression *first);
+    Exps(IExp* first);
 
     void print(int lvl);
 };
 
-}  // namespace AST
+} // namespace ast
+
+} // namespace compiler
 
 #endif // EXPRESSION_HPP

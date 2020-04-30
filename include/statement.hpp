@@ -4,23 +4,27 @@
 #include <string>
 #include <vector>
 
-namespace AST {
+namespace compiler {
 
-class t_statement {
+namespace ast {
+
+class IStmt {
   public:
     virtual void print(int lvl) = 0;
 
     virtual void llvm_put(std::ostream& os, int& local_var_count) = 0;
 };
 
-class t_statements : public std::vector<t_statement*>, public t_statement {
+class Stmts : public std::vector<IStmt*>, public IStmt {
   public:
     void llvm_put(std::ostream& os, int& local_var_count);
 
     void print(int lvl);
 };
 
-}  // namespace AST
+}  // namespace ast
+
+} // namespace compiler
 
 #endif // STATEMENT_HPP
 

@@ -5,109 +5,106 @@
 #include "identifiers.hpp"
 #include "types.hpp"
 
-namespace AST {
+namespace compiler {
+
+namespace ast {
 
 /**
  * @brief An integer literal
  */
-class t_int_lit : public t_expression {
-  public:
-    t_int_lit(int lit);
+struct IntLit : public IExp {
+    int lit;
 
-    t_id *exp_type();
+    IntLit(int lit) : lit(lit) {  };
+
+    Id* exp_type();
 
     std::string llvm_eval(std::ostream& os, int& local_var_count);
 
     void print(int lvl);
-
-  private:
-    const int lit_;
 };
 
 /**
  * @brief A string literal
  */
-class t_str_lit : public t_expression {
-  public:
-    t_str_lit(std::string *lit);
+struct StrLit : public IExp {
+    std::string* lit;
+    std::string llvm_id_ = "TODO";
 
-    t_id *exp_type();
+    StrLit(std::string* lit) : lit(lit) {  };
+
+    Id* exp_type();
 
     std::string llvm_eval(std::ostream& os, int& local_var_count);
 
     void print(int lvl);
-
-  private:
-    std::string *lit_;
-    std::string llvm_id_ = "TODO";
 };
 
 /**
  * @brief A function call
  */
-class t_function_call : public t_expression {
-  public:
-    t_function_call(t_id *name, t_expressions *args);
+struct FuncCall : public IExp {
+    Id* id;
+    Exps* args;
 
-    t_id *exp_type();
+    FuncCall(Id* id, Exps* args) : id(id), args(args) {  };
+
+    Id *exp_type();
 
     std::string llvm_eval(std::ostream& os, int& local_var_count);
 
     void print(int lvl);
+};
 
-  private:
-    t_id *name_;
-    t_expressions *args_;
+enum UnaryOperators : char {
+    kUnaMinus = '-',
+};
+
+enum BinaryOperators : char {
+    kPlus     = '+',
+    kBinMinus = '-',
+    kAsterisk = '*',
+    kSlash    = '/',
 };
 
 /**
  * @brief An unary operation
  */
-class t_unary_op : public t_expression {
-  public:
-    enum valid_op {
-        minus
-    };
+struct UnaOp : public IExp {
+    UnaryOperators op;
+    IExp *exp;
 
-    t_unary_op(const valid_op op, t_expression *exp);
+    UnaOp(UnaryOperators op, IExp* exp) : op(op), exp(exp) {  };
 
-    t_id *exp_type();
+    Id* exp_type();
 
     virtual std::string llvm_eval(std::ostream& os, int& local_var_count);
 
     void print(int lvl);
-  
-  private:
-    const valid_op op_;
-    t_expression *exp_;
 };
 
 /**
  * @brief A binary operation
  */
-class t_binary_op : public t_expression {
+struct BinOp : public IExp {
+    const BinaryOperators op;
+    IExp* lhs;
+    IExp* rhs;
+
     //TODO estoy suponiendo el tipo de ambos operandos es int.
     // Hay que comprobar tipos y buscar el operador apropiado.
-  public:
-    enum valid_op {
-        plus, minus, asterisk, slash
-    };
+    BinOp(const BinaryOperators op, IExp* lhs, IExp* rhs) : op(op), lhs(lhs), rhs(rhs) {  };
 
-    static std::string op_string(valid_op op);
-    
-    t_binary_op(const valid_op op, t_expression *lhs, t_expression *rhs);
-
-    t_id *exp_type();
+    Id *exp_type();
 
     std::string llvm_eval(std::ostream& os, int& local_var_count);
 
     void print(int lvl);
-
-  private:
-    const valid_op op_;
-    t_expression *l_, *r_;
 };
 
-}
+} // namespace ast
+
+} // namespace compiler
+
 #endif // EXPRESSIONS_HPP
 

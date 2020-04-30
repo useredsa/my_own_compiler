@@ -4,11 +4,13 @@
 #include <iostream>
 #include <string>
 
-namespace AST {
+namespace compiler {
 
-class t_type {
+namespace ast {
+
+class Type {
   public:
-    t_type() {  };
+    Type() {  };
 
     virtual const std::string& llvm_name() = 0;
 
@@ -17,7 +19,9 @@ class t_type {
     }
 };
 
-}
+} // namespace ast
+
+} // namespace compiler
 
 #endif // TYPE_HPP
 
