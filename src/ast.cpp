@@ -35,7 +35,7 @@ void Program::llvm_output(std::ostream& os, int local_var_count) {
     os << "target datalayout = \"e-m:e-i64:64-f80:128-n8:16:32:64-S128\"\n";
     os << "target triple = \"x86_64-pc-linux-gnu\"\n";
     os << "\n";
-    os << "@.io.int = private unnamed_addr constant [3 x i8] c\"%d\\00\", align 1\n";
+    builtin::LlvmPutStrLits(os);
     os << "\n\n";
 
     for (Function* func : *funcs_) {
@@ -45,6 +45,8 @@ void Program::llvm_output(std::ostream& os, int local_var_count) {
     
     os << "declare i32 @__isoc99_scanf(i8*, ...)\n";
     os << "declare i32 @printf(i8*, ...)\n";
+    os << "declare i64 @strlen(i8*)\n";
+    os << "declare i8* @strcpy(i8*, i8*)\n";
 }
 
 } //namespace ast

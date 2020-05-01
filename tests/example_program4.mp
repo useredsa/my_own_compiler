@@ -13,11 +13,14 @@ var a : integer;
 begin
     read(a);
     if (a) then
+    begin
         for i := 1+0 to 2+3 do
         begin
-            write(a)
-            a := a + 1;
-        end
+            write(a, "," + " ");
+            a := a + 1
+        end;
+        write(a, "\n")
+    end
     else
         a := foo(a)
 end.

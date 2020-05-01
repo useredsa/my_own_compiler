@@ -300,6 +300,10 @@ expression:
         $$ = new IntLit($1);
     }
     |
+    "str_lit" {
+        $$ = new StrLit($1);
+    }
+    |
     id_ref "(" arguments ")" {
         $$ = new FuncCall($1, $3);
     }
@@ -348,10 +352,6 @@ print_list:
 print_item:
     expression {
         $$ = $1;
-    }
-    |
-    "str_lit" {
-        $$ = new StrLit($1);
     }
     ;
 

@@ -176,7 +176,11 @@ void WriteStmt::llvm_put(std::ostream& os, int& local_var_count) {
                << "i32 0), " << exp->exp_type()->llvm_type_name() << " " << ref
                << ")\n";
         } else if (exp->exp_type() == identifiers::GetId("str")) {
-            //TODO
+            std::string ref = exp->llvm_eval(os, local_var_count);
+            os << "\t%" << local_var_count++ << " = call i32 (i8*, ...) @printf(i8* "
+               << "getelementptr inbounds ([3 x i8], [3 x i8]* @.io.str, i32 0, "
+               << "i32 0), " << exp->exp_type()->llvm_type_name() << " " << ref
+               << ")\n";
         } else {
             //TODO imprimir error write no soporta cosas que no sean builtin
         }

@@ -12,7 +12,7 @@ namespace compiler {
 namespace ast {
 
 Id* IntLit::exp_type() {
-    return identifiers::GetId("integer");
+    return builtin::IntTypeId();
 }
 
 string IntLit::llvm_eval(std::ostream& os, int& local_var_count) {
@@ -23,14 +23,24 @@ void IntLit::print(int lvl) {
     std::cout << string(lvl, '\t') << "int_lit: " << lit << '\n';
 }
 
+vector<StrLit*> program_str_lits;
+
+StrLit::StrLit(string* lit, const string& llvm_id) : lit(lit), llvm_id(llvm_id) {
+    program_str_lits.push_back(this);
+}
+
+StrLit::StrLit(string* lit)
+    : StrLit(lit, "@.strlit." + std::to_string(program_str_lits.size())) {  }
 
 Id* StrLit::exp_type() {
-    return identifiers::GetId("str");
+    return builtin::StrTypeId();
 }
 
 string StrLit::llvm_eval(std::ostream& os, int& local_var_count) {
-    return "getelementptr inbounds ([4 x i8], [4 x i8]* " + llvm_id_
-            + ", i32 0, i32 0)";
+    // return llvm_id;
+    string len = std::to_string(lit->size()+1);
+    return "getelementptr inbounds ([" + len + " x i8], [" + len + " x i8]* "
+            + llvm_id + ", i32 0, i32 0)";
 }
 
 void StrLit::print(int lvl) {
@@ -85,7 +95,7 @@ void FuncCall::print(int lvl) {
 }
 
 Id* UnaOp::exp_type() {
-    return identifiers::GetId("integer"); //TODO
+    return builtin::IntTypeId(); //TODO
 }
 
 string UnaOp::llvm_eval(std::ostream& os, int& local_var_count) {
@@ -102,7 +112,11 @@ void UnaOp::print(int lvl) {
 }
 
 Id* BinOp::exp_type() {
-    return identifiers::GetId("integer"); //TODO
+    //TODO resolver las funciones en una pasada
+    Function* func = identifiers::GetId("operator+")->
+                         can_be_called({lhs->exp_type(), rhs->exp_type()});
+    assert(func != nullptr);
+    return func->type(); //TODO
 }
 
 string BinOp::llvm_eval(std::ostream& os, int& local_var_count) {

@@ -4,6 +4,8 @@
 #include "expressions.hpp"
 #include "identifiers.hpp"
 #include "types.hpp"
+#include <vector>
+#include <string>
 
 namespace compiler {
 
@@ -29,9 +31,13 @@ struct IntLit : public IExp {
  */
 struct StrLit : public IExp {
     std::string* lit;
-    std::string llvm_id_ = "TODO";
+    std::string llvm_id;
 
-    StrLit(std::string* lit) : lit(lit) {  };
+    StrLit(std::string* lit);
+
+    StrLit(std::string* lit, const std::string& llvm_id);
+
+    //TODO add destructor that erases from the list!
 
     Id* exp_type();
 
@@ -39,6 +45,9 @@ struct StrLit : public IExp {
 
     void print(int lvl);
 };
+
+/** String literals of the program */
+extern std::vector<StrLit*> program_str_lits;
 
 /**
  * @brief A function call

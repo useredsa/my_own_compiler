@@ -1,6 +1,8 @@
 #ifndef BUILTIN_HPP
 #define BUILTIN_HPP
 
+#include <ostream>
+
 namespace compiler {
 
 namespace ast {
@@ -13,6 +15,11 @@ namespace builtin {
  * //TODO
  */
 void RegisterBuiltins();
+
+/**
+ * @brief Outputs as global variables the program's str literals
+ */
+void LlvmPutStrLits(std::ostream& os);
 
 } // namespace builtin
 
