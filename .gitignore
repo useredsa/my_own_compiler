@@ -1,5 +1,5 @@
 # Vscode settings
-.vscode/*
+.vscode
 
 # Cache from lsp
 .ccls-cache

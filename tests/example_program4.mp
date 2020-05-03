@@ -3,12 +3,12 @@
  ********************************)
 program test1 ();
 
-function foo(const bar : integer) : integer
+function foo(const bar : int) : int
 begin
     write(bar)
 end;
 
-var a : integer;
+var a : int;
 
 begin
     read(a);

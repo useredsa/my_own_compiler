@@ -1,69 +1,13 @@
 #ifndef EXPRESSIONS_HPP
 #define EXPRESSIONS_HPP
 
-#include "expressions.hpp"
-#include "identifiers.hpp"
-#include "types.hpp"
 #include <vector>
 #include <string>
+#include <variant>
 
 namespace compiler {
 
 namespace ast {
-
-/**
- * @brief An integer literal
- */
-struct IntLit : public IExp {
-    int lit;
-
-    IntLit(int lit) : lit(lit) {  };
-
-    Id* exp_type();
-
-    std::string llvm_eval(std::ostream& os, int& local_var_count);
-
-    void print(int lvl);
-};
-
-/**
- * @brief A string literal
- */
-struct StrLit : public IExp {
-    std::string* lit;
-    std::string llvm_id;
-
-    StrLit(std::string* lit);
-
-    StrLit(std::string* lit, const std::string& llvm_id);
-
-    //TODO add destructor that erases from the list!
-
-    Id* exp_type();
-
-    std::string llvm_eval(std::ostream& os, int& local_var_count);
-
-    void print(int lvl);
-};
-
-/** String literals of the program */
-extern std::vector<StrLit*> program_str_lits;
-
-/**
- * @brief A function call
- */
-struct FuncCall : public IExp {
-    Id* id;
-    Exps* args;
-
-    FuncCall(Id* id, Exps* args) : id(id), args(args) {  };
-
-    Id *exp_type();
-
-    std::string llvm_eval(std::ostream& os, int& local_var_count);
-
-    void print(int lvl);
-};
 
 enum UnaryOperators : char {
     kUnaMinus = '-',
@@ -76,39 +20,83 @@ enum BinaryOperators : char {
     kSlash    = '/',
 };
 
+template<UnaryOperators op>  struct UnaOp;
+template<BinaryOperators op> struct BinOp;
+class Id;
+struct IntLit;
+struct StrLit;
+struct FuncCall;
+
+
+using Exp = std::variant<
+    UnaOp<kUnaMinus>*,
+    BinOp<kPlus>*,
+    BinOp<kBinMinus>*,
+    BinOp<kAsterisk>*,
+    BinOp<kSlash>*,
+    Id*,
+    IntLit*,
+    StrLit*,
+    FuncCall*
+>;
+
+/**
+ * @brief An integer literal
+ */
+struct IntLit {
+    int lit;
+
+    IntLit(int lit = 0) : lit(lit) {  };
+};
+
+/** String literals of the program */
+extern std::vector<StrLit*> program_str_lits;
+
+/**
+ * @brief A string literal
+ */
+struct StrLit {
+    std::string* lit;
+    std::string llvm_id;
+
+    StrLit(std::string* lit = nullptr); //TODO added for bison
+
+    StrLit(std::string* lit, const std::string& llvm_id);
+
+    //TODO add destructor that erases from the list!
+};
+
+/**
+ * @brief A function call
+ */
+struct FuncCall {
+    Id* id;
+    std::vector<Exp> args;
+
+    FuncCall(Id* id, std::vector<Exp>&& args) : id(id), args(args) {  };
+};
+
 /**
  * @brief An unary operation
  */
-struct UnaOp : public IExp {
-    UnaryOperators op;
-    IExp *exp;
+template<UnaryOperators op>
+struct UnaOp {
+    Exp exp;
 
-    UnaOp(UnaryOperators op, IExp* exp) : op(op), exp(exp) {  };
-
-    Id* exp_type();
-
-    virtual std::string llvm_eval(std::ostream& os, int& local_var_count);
-
-    void print(int lvl);
+    UnaOp(Exp exp) : exp(exp) {  };
 };
 
 /**
  * @brief A binary operation
  */
-struct BinOp : public IExp {
-    const BinaryOperators op;
-    IExp* lhs;
-    IExp* rhs;
+template<BinaryOperators op>
+struct BinOp {
+    Exp lhs;
+    Exp rhs;
 
     //TODO estoy suponiendo el tipo de ambos operandos es int.
     // Hay que comprobar tipos y buscar el operador apropiado.
-    BinOp(const BinaryOperators op, IExp* lhs, IExp* rhs) : op(op), lhs(lhs), rhs(rhs) {  };
-
-    Id *exp_type();
-
-    std::string llvm_eval(std::ostream& os, int& local_var_count);
-
-    void print(int lvl);
+    BinOp(Exp lhs, Exp rhs) : lhs(lhs), rhs(rhs) {  };
 };
 
 } // namespace ast

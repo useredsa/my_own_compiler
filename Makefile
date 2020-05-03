@@ -72,13 +72,18 @@ $(BIND):
 # Include dependencies files
 -include $(DEPS)
 
-.PHONY: clean cleandep
+.PHONY: clean cleandep tidy
 
 clean:
 	rm -f $(TARGET) $(OBJS) $(INCD)/syntax.tab.hpp $(BUILD)/syntax.tab.cpp $(BUILD)/lex.yy.cpp
 
 cleandep:
 	rm -f $(DEPS)
+
+tidy:
+	@for src in $(SRCS) ; do \
+		clang-tidy $(SRCD)/$$src -- $(CXXFLAGS) ; \
+	done
 
 run: $(TARGET) tests/example_program4.mp
 	./$(TARGET) < tests/example_program4.mp

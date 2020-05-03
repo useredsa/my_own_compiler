@@ -65,36 +65,32 @@ Function* Id::can_be_called(const std::vector<Id*>& signature) {
     return nullptr;
 }
 
-Id* Id::exp_type() {
-    assert(abstracts_ == kVariable);
-    return ref.var->type;
-}
+// Id* Id::exp_type() {
+//     assert(abstracts_ == kVariable);
+//     return ref.var->type;
+// }
 
-std::string Id::llvm_eval(std::ostream& os, int& local_var_count) {
-    if (abstracts_ == kVariable) {
-        std::string ref = "%" + std::to_string(local_var_count++);
-        os << "\t" << ref << " = " << "load "
-           << exp_type()->llvm_type_name()
-           << ", " << exp_type()->llvm_type_name() << "* %" << name_
-           << ", align 4\n";
-        return ref;
-    }
-    if (abstracts_ == kConstant) {
-        //TODO
-    }
-    //TODO y otro error pero este debe comprobarse antes :/
-    return "ERROR";
-}
+// std::string Id::llvm_eval(std::ostream& os, int& local_var_count) {
+//     if (abstracts_ == kVariable) {
+//         std::string ref = "%" + std::to_string(local_var_count++);
+//         os << "\t" << ref << " = " << "load "
+//            << exp_type()->llvm_type_name()
+//            << ", " << exp_type()->llvm_type_name() << "* %" << name_
+//            << ", align 4\n";
+//         return ref;
+//     }
+//     if (abstracts_ == kConstant) {
+//         //TODO
+//     }
+//     //TODO y otro error pero este debe comprobarse antes :/
+//     return "ERROR";
+// }
 
-void Id::llvm_var_alloca(std::ostream& os) {
-    assert(abstracts_ == kVariable);
-    os << "\t%" << name_ << " = alloca " << ref.var->type->llvm_type_name()
-       << ", align 4\n";
-}
-
-void Id::print(int lvl) {
-    std::cout << std::string(lvl, '\t') << "id: " << name_ << '\n';
-}
+// void Id::llvm_var_alloca(std::ostream& os) {
+//     assert(abstracts_ == kVariable);
+//     os << "\t%" << name_ << " = alloca " << ref.var->type->llvm_type_name()
+//        << ", align 4\n";
+// }
 
 } // namespace ast
 
@@ -143,19 +139,19 @@ void AbandonCurrentNameScope() {
 /**
  * Declares an identifier in an active scope
  */
-Id* NewId(const string& name, NameScope* scope, int scope_pos) {
+Id* NewId(string&& name, NameScope* scope, int scope_pos) {
     NameInfo& info = name_table[name];
-    Id* id = new Id(scope, name);
+    Id* id = new Id(scope, std::move(name));
     info.ids.push_back(id);
     info.active_declarations.emplace(scope_pos, id);
     return id;
 }
 
-Id* NewId(const string& name) {
-    return NewId(name, active_scopes.back(), (int) active_scopes.size()-1);
+Id* NewId(string&& name) {
+    return NewId(std::move(name), active_scopes.back(), (int) active_scopes.size()-1);
 }
 
-Id* GetId(const string& name) {
+Id* GetId(string&& name) {
     NameInfo& info = name_table[name];
     int last_acronological = acronological_scopes.back();
     while (not info.active_declarations.empty()) {
@@ -170,7 +166,7 @@ Id* GetId(const string& name) {
         }
         info.active_declarations.pop();
     }
-    return NewId(name, active_scopes[last_acronological], last_acronological);
+    return NewId(std::move(name), active_scopes[last_acronological], last_acronological);
 }
 
 } // namespace identifiers

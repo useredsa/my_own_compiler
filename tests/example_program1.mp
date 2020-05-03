@@ -3,7 +3,7 @@
  ************************)
 
 program test1 ();
-var a,b,c: integer;
+var a,b,c: int;
 const d := 10, e := 0;
 begin
   write("Inicio del \"programa\"\n");

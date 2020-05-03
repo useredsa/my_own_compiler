@@ -3,9 +3,7 @@
 
 #include <iostream>
 #include <vector>
-#include "identifiers.hpp"
-#include "type.hpp"
-#include "statement.hpp"
+#include "statements.hpp"
 
 namespace compiler {
     
@@ -19,6 +17,7 @@ struct IntLit;
  * 
  * //TODO
  */
+//TODO esta clase la quiero destripar
 struct Dcls {
     std::vector<Id*> constants;
     std::vector<Id*> variables;
@@ -34,14 +33,6 @@ struct Dcls {
      * @brief Adds a list of variables declarations? //TODO Por qué identifiers?
      */
     void AddIdentifiers(const std::vector<Id*>& ids, Id* type);
-
-    //TODO
-    void llvm_put_constants(std::ostream& os);
-
-    //TODO
-    void llvm_put_variables(std::ostream& os);
-
-    void print(int lvl);
 };
 
 /**
@@ -55,40 +46,42 @@ class Function {
              Id* name,
              const std::vector<std::pair<Id*, Id*>>& args,
              Dcls* dcls,
-             Stmts* statements);
+             std::vector<Stmt>&& statements);
 
-    inline const std::vector<Id*>& signature() const { //TODO buscar otros getters y hacerlos const
-        return signature_;
-    }
-
-    inline const std::string& name() {
-        return name_;
-    }
-
-    inline Id* type() {
+    inline Id* type() const {
         return type_;
     }
 
-    void llvm_put(std::ostream& os);
+    inline const std::string& name() const {
+        return name_;
+    }
 
+    inline const std::vector<Id*>& signature() const {
+        return signature_;
+    }
+
+    inline const Dcls* dcls() const {
+        return dcls_;
+    }
+
+    inline const std::vector<Id*>& args() const {
+        return args_;
+    }
+
+    inline const std::vector<Stmt>& stmts() const {
+        return statements_;
+    }
     //TODO poner que las funciones inline sobreescriben esto para poner un inline
-    virtual std::string llvm_put_call(std::ostream& os,
-                                      int& local_var_count,
-                                      std::vector<std::string*> params);
-
-    void print(int lvl);
-
+    // virtual std::string llvm_put_call(std::ostream& os,
+    //                                   int& local_var_count,
+    //                                   const std::vector<std::string*>& params);
   private:
-    Id* type_;
     const std::string& name_;
+    Id* type_;
+    Dcls* dcls_;
     std::vector<Id*> args_;
     std::vector<Id*> signature_;
-    Dcls* dcls_;
-    Stmts* statements_;
-};
-
-class Functions : public std::vector<Function*> {
-
+    std::vector<Stmt> statements_;
 };
 
 } // namespace ast

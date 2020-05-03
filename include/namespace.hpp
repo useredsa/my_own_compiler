@@ -1,5 +1,0 @@
-#ifndef NAMESPACE_HPP
-#define NAMESPACE_HPP
-
-#endif // NAMESPACE_HPP
-

@@ -2,12 +2,8 @@
 #define IDENTIFIERS_HPP
 
 #include <assert.h>
-
 #include <string>
 #include <vector>
-
-#include "type.hpp"
-#include "expression.hpp"
 
 namespace compiler {
 
@@ -16,6 +12,7 @@ namespace ast {
 struct Function;
 struct IntLit;
 class Id;
+class Type;
 
 /**
  * @brief Intrinsec data to a variable
@@ -75,19 +72,19 @@ enum NamedAbstractions {
  * associated to the name itself), while the variable (Var) hols the
  * information of a variable.
  */
-class Id : public ast::IExp {
+class Id {
   public:
 
-    Id(NameScope* scope, const std::string& name)
+    Id(NameScope* scope, std::string&& name)
         : scope_(scope), name_(name), abstracts_(kUnresolved), ref() {  }
 
     ~Id();
     
-    inline NameScope* namescope() {
+    inline NameScope* namescope() const {
         return scope_;
     }
     
-    inline const std::string& name() {
+    inline const std::string& name() const {
         return name_;
     }
 
@@ -154,28 +151,26 @@ class Id : public ast::IExp {
     /**
      * @brief //TODO when behaving as lvalue
      */
-    inline std::string llvm_var_name(std::ostream& os, int& local_var_count) {
-        assert(abstracts_ == kVariable);
-        return "%" + name_;
-    }
+    // inline std::string llvm_var_name(std::ostream& os, int& local_var_count) {
+    //     assert(abstracts_ == kVariable);
+    //     return "%" + name_;
+    // }
 
-    virtual Id* exp_type();
+    // virtual Id* exp_type();
 
     /**
      * @brief //TODO rvalue
      */
-    virtual std::string llvm_eval(std::ostream& os, int& local_var_count);
+    // virtual std::string llvm_eval(std::ostream& os, int& local_var_count);
 
     /** Methods when behaving as an specific obj **/ //TODO create a expression that references id and has things and the above things?
 
-    void llvm_var_alloca(std::ostream& os);
+    // void llvm_var_alloca(std::ostream& os);
 
-    inline const std::string& llvm_type_name() {
-        assert(abstracts_ == kType);
-        return ref.type->llvm_name();
-    }
-
-    void print(int lvl); //TODO marcar que deja de ser virtual
+    // inline const std::string& llvm_type_name() {
+    //     assert(abstracts_ == kType);
+    //     return ref.type->llvm_name();
+    // }
 
   private:
     NameScope* scope_;
@@ -220,14 +215,14 @@ void AbandonCurrentNameScope();
 /**
  * @brief Creates an Id for a new name in the current name scope.
  */
-ast::Id* NewId(const std::string& name);
+ast::Id* NewId(std::string&& name);
 
 /**
  * @brief Gets the Id associated with a name in the CURRENT name scope.
  * 
  * Name resolution techniques apply. The Id may be unresolved.
  */
-ast::Id* GetId(const std::string& name);
+ast::Id* GetId(std::string&& name);
 
 } // namespace identifiers
 

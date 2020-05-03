@@ -5,8 +5,6 @@
 
 namespace compiler {
 
-namespace ast {
-
 namespace builtin {
 
 /**
@@ -22,8 +20,6 @@ void RegisterBuiltins();
 void LlvmPutStrLits(std::ostream& os);
 
 } // namespace builtin
-
-} // namespace ast
 
 } // namespace compiler
 

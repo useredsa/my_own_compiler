@@ -1,83 +1,88 @@
 #ifndef STATEMENTS_HPP
 #define STATEMENTS_HPP
 
-#include <iostream>
 #include <string>
 #include <vector>
-#include "statement.hpp"
+#include <variant>
 #include "expressions.hpp"
-#include "identifiers.hpp"
 
 namespace compiler {
 
 namespace ast {
 
-struct Assig  : public IStmt {
+class Id;
+struct Assig;
+struct IfStmt;
+struct WhileStmt;
+struct ForStmt;
+struct WriteStmt;
+struct ReadStmt;
+struct CompStmt;
+struct EmptyStmt;
+
+using Stmt = std::variant<
+    Assig*,
+    IfStmt*,
+    WhileStmt*,
+    ForStmt*,
+    WriteStmt*,
+    ReadStmt*,
+    CompStmt*,
+    EmptyStmt*
+>;
+
+struct EmptyStmt {  };
+
+struct CompStmt : public std::vector<Stmt> {
+    CompStmt(std::vector<Stmt>&& stmts) : std::vector<Stmt>(stmts) {  }
+};
+
+struct Assig {
     Id* id;
-    IExp* exp;
+    Exp exp;
 
-    Assig (Id* id, IExp* exp) : id(id), exp(exp) {  }
-
-    void llvm_put(std::ostream& os, int& local_var_count);
-
-    void print(int lvl);
+    Assig (Id* id, Exp exp) : id(id), exp(exp) {  }
 };
 
-struct IfStmt : public IStmt {
-    IExp* exp;
-    IStmt* stmt;
-    IStmt* alt_stmt;
+struct IfStmt {
+    Exp exp;
+    Stmt stmt;
+    Stmt alt_stmt;
 
-    IfStmt(IExp* exp, IStmt* stmt, IStmt* alt_stmt = nullptr)
+    IfStmt(Exp exp, Stmt stmt)
+            : exp(exp), stmt(stmt), alt_stmt(new EmptyStmt) {  }
+
+    IfStmt(Exp exp, Stmt stmt, Stmt alt_stmt)
             : exp(exp), stmt(stmt), alt_stmt(alt_stmt) {  }
-
-    void llvm_put(std::ostream& os, int& local_var_count);
-
-    void print(int lvl);
 };
 
-struct WhileStmt : public IStmt {
-    IExp* exp;
-    IStmt* stmt;
-    WhileStmt(IExp *exp, IStmt* stmt)
+struct WhileStmt {
+    Exp exp;
+    Stmt stmt;
+
+    WhileStmt(Exp exp, Stmt stmt)
             : exp(exp), stmt(stmt) {  }
-
-    void llvm_put(std::ostream& os, int& local_var_count);
-
-    void print(int lvl);
 };
 
-struct ForStmt : public IStmt {
+struct ForStmt {
     Id* id;  //TODO Implement scoping?
-    IExp* start_exp;
-    IExp* end_exp;
-    IStmt* stmt;
+    Exp start_exp;
+    Exp end_exp;
+    Stmt stmt;
 
-    ForStmt(Id* id, IExp* start_exp, IExp* end_exp, IStmt* stmt);
-
-    void llvm_put(std::ostream& os, int& local_var_count);
-
-    void print(int lvl);
+    ForStmt(Id* id, Exp start_exp, Exp end_exp, Stmt stmt);
 };
 
-struct WriteStmt : public IStmt {
-    Exps* exps;
+struct WriteStmt {
+    std::vector<Exp> exps;
 
-    WriteStmt(Exps* exps) : exps(exps) {  }
-
-    void llvm_put(std::ostream& os, int& local_var_count);
-
-    void print(int lvl);
+    WriteStmt(std::vector<Exp>&& exps) : exps(exps) {  }
 };
 
-struct ReadStmt : public IStmt {
-    std::vector<Id*>* ids;
+struct ReadStmt {
+    std::vector<Id*> ids;
 
-    ReadStmt(std::vector<Id*>* ids) : ids(ids) {  }
-
-    void llvm_put(std::ostream& os, int& local_var_count);
-
-    void print(int lvl);
+    ReadStmt(std::vector<Id*>&& ids) : ids(ids) {  }
 };
 
 } // namespace ast

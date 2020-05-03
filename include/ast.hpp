@@ -3,6 +3,7 @@
 
 #include "function.hpp"
 #include "statements.hpp"
+#include "expressions.hpp"
 #include "identifiers.hpp"
 
 namespace compiler {
@@ -14,23 +15,16 @@ namespace ast {
  * 
  * //TODO
  */
-class Program {
-  public:
-    Program(Functions* funcs, Dcls* decls, Stmts* stmts);
+struct Program {
+    std::vector<Function*> funcs;
+    Function main;
 
-    /**
-     * @brief Prints the entire AST
-     */
-    void print(int lvl = 0);
+    Program(std::vector<Function*>&& funcs, Dcls* decls, std::vector<Stmt>&& stmts);
 
-    /**
-     * @brief Generates the LLVM code of the program represented by the AST
-     */
-    void llvm_output(std::ostream& os, int local_var_count = 1);
-
-  private:
-    Functions* funcs_;
-    Function main_;
+    // /**
+    //  * @brief Generates the LLVM code of the program represented by the AST
+    //  */
+    // void llvm_output(std::ostream& os, int local_var_count = 1);
 };
 
 }  // namespace ast

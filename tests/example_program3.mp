@@ -3,7 +3,7 @@
  ********************************)
 program test1 ();
 
-var a : integer;
+var a : int;
 
 begin
     read(a);

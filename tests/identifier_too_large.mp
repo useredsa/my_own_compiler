@@ -3,10 +3,10 @@
  ************************)
 
 program test1 ();
-var a,b,c: integer;
+var a,b,c: int;
 const d := 10, e := 0;
 begin
-  var a1234567890123456 : integer;
+  var a1234567890123456 : int;
   a1234567890123456.method();
   write("Inicio del \"programa\"\n");
   a := 0; b := 0; c := 5+2-2;

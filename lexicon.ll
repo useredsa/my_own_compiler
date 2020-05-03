@@ -3,187 +3,148 @@
 #include <iostream>
 #include <string>
 #include <vector>
-using namespace std; //TODO remove
-
-// #include "ast.hpp" //TODO remove
 #include "syntax.tab.hpp"
+#include "log.hpp"
+using compiler::lexical_log;
+using compiler::warning_log;
 
-int check_id_size();
-int numErrors = 0;
-int numWarnings = 0;
-int lineStart = 0;
-string* strlit;
 const int MAX_STRING_LITERAL_SIZE = 1<<7; // 7Kb
-
-void logerr(const string& fmt, ...);
-void logwar(const string& fmt, ...);
+int check_id_size();
+int lineStart = 0;
+std::string* strlit;
 
 %}
 
 %option noyywrap
 %option yylineno
-digit               [0-9]
-letter              [a-zA-Z]
-integer             {digit}+
-unrecognized        [^0-9a-zA-Z()".,:;=+\-*/\\ \t\r\n]
 %x STRING_COND
 %x STRING_ESCAPE_COND
 %x COMMENT_COND
 %x INLINE_COMM_COND
 %x LARGE_ID_COND
 
+digit                           [0-9]
+letter                          [a-zA-Z]
+integer                         {digit}+
+unrecognized                    [^0-9a-zA-Z()".,:;=+\-*/\\ \t\r\n]
+
+
+
+
 %%
 
-[ \t\r\n]+                          ;
-{integer}                           {
-                                      long long val = atoll(yytext);
-                                      if (val >= (1LL<<31) || val < -(1LL<<31))
-                                        logwar("Integer literal out of range");
-                                      yylval.intlit = val;
-                                      return INTLIT;
-                                    }
- /* \"([^"\n]|\\\")*\"                  return STRING; */
- /* \"([^"\n]|\\\")*                    printf("%d: ERROR: Detected an unfinished string literal\n", yylineno); */
+[ \t\r\n]+                      ;
+ /* Keywords and operators */
+program                         return yy::parser::token::PROGRAM;
+function                        return yy::parser::token::FUNCTION;
+const                           return yy::parser::token::CONST;
+var                             return yy::parser::token::VAR;
+int                             return yy::parser::token::INT;
+str                             return yy::parser::token::STR;
+begin                           return yy::parser::token::BEGINN;
+end                             return yy::parser::token::END;
+if                              return yy::parser::token::IF;
+then                            return yy::parser::token::THEN;
+else                            return yy::parser::token::ELSE;
+while                           return yy::parser::token::WHILE;
+do                              return yy::parser::token::DO;
+for                             return yy::parser::token::FOR;
+to                              return yy::parser::token::TO;
+write                           return yy::parser::token::WRITE;
+read                            return yy::parser::token::READ;
+";"                             return yy::parser::token::SEMICOL;
+":"                             return yy::parser::token::COLON;
+"."                             return yy::parser::token::DOT;
+","                             return yy::parser::token::COMMA;
+"+"                             return yy::parser::token::PLUSOP;
+"-"                             return yy::parser::token::MINUSOP;
+"*"                             return yy::parser::token::MULTOP;
+"/"                             return yy::parser::token::DIVOP;
+"("                             return yy::parser::token::LBRACKET;
+")"                             return yy::parser::token::RBRACKET;
+":="                            return yy::parser::token::ASSIGNOP;
 
  /* Comments */
-"//"                                BEGIN(INLINE_COMM_COND);
-<INLINE_COMM_COND>.                 ;
-<INLINE_COMM_COND>"\n"              BEGIN(INITIAL);
-"(*"                                lineStart = yylineno, BEGIN(COMMENT_COND);
-<COMMENT_COND><<EOF>>               {
-                                      logerr("Unclosed comment starting on line: %d", lineStart);
-                                      BEGIN(INITIAL);
-                                    }
-<COMMENT_COND>(.|\n)                ;
-<COMMENT_COND>"*)"                  BEGIN(INITIAL);
+"//"                            BEGIN(INLINE_COMM_COND);
+<INLINE_COMM_COND>.             ;
+<INLINE_COMM_COND>"\n"          BEGIN(INITIAL);
+"(*"                            lineStart = yylineno, BEGIN(COMMENT_COND);
+<COMMENT_COND><<EOF>>           {
+                                  lexical_log << "Unclosed comment starting on line: "
+                                              << lineStart << "\n";
+                                  BEGIN(INITIAL);
+                                }
+<COMMENT_COND>(.|\n)            ;
+<COMMENT_COND>"*)"              BEGIN(INITIAL);
+
 
  /* Strings */
-"\""                                {
-                                      strlit = new string();
-                                      //yymore();  //TODO Esto supongo que ya no tiene sentido
-                                      BEGIN(STRING_COND);
-                                    }
-<STRING_COND>"\n"                   {
-                                      delete strlit;
-                                      logerr("Unclosed String");
-                                      yyless(yyleng-1);  //TODO Esto supongo que sobra tambié
-                                      BEGIN(INITIAL);
-                                      return STRING;
-                                    }
-<STRING_COND>[^\"\n]                {
-                                      //TODO No recuerdo por qué era el "+ 2", así que he
-                                      //     dejado una comparación equivalente a la anterior
-                                      if (strlit->length() + yyleng + 2 >= MAX_STRING_LITERAL_SIZE) {
-                                        logerr("String literal surpasses maximum size");
-                                        exit(-1);  //TODO Seguir parseando?
-                                      }
-                                      if (yytext[yyleng-1] == '\\') {
-                                        strlit->append(yytext, yyleng-1);
-                                        BEGIN(STRING_ESCAPE_COND);
-                                      } else {
-                                        yymore();
-                                      }
-                                    }
-<STRING_ESCAPE_COND>"\\"            strlit->push_back('\\'), BEGIN(STRING_COND);
-<STRING_ESCAPE_COND>"\""            strlit->push_back('\"'), BEGIN(STRING_COND);
-<STRING_ESCAPE_COND>"t"             strlit->push_back('\t'), BEGIN(STRING_COND);
-<STRING_ESCAPE_COND>"r"             strlit->push_back('\r'), BEGIN(STRING_COND);
-<STRING_ESCAPE_COND>"n"             strlit->push_back('\n'), BEGIN(STRING_COND);
- /*TODO He probado printf("\x") en C con varias letras y suele salir x*/
-<STRING_ESCAPE_COND>.               logerr("Unknown escape sequence"), BEGIN(STRING_COND);
-<STRING_COND>"\""                   {
-                                      strlit->append(yytext, yyleng-1);
-                                      yylval.strlit = strlit;
-                                      BEGIN(INITIAL);
-                                      return STRING;
-                                    }
+"\""                            {
+                                  strlit = new std::string();
+                                  //yymore();  //TODO Esto supongo que ya no tiene sentido
+                                  BEGIN(STRING_COND);
+                                }
+<STRING_COND>"\n"               {
+                                  delete strlit;
+                                  lexical_log << "Unclosed String\n";
+                                  yyless(yyleng-1);  //TODO Esto supongo que sobra tambié
+                                  BEGIN(INITIAL);
+                                  return yy::parser::token::STRLIT;
+                                }
+<STRING_COND>[^\"\n]            {
+                                  //TODO No recuerdo por qué era el "+ 2", así que he
+                                  //     dejado una comparación equivalente a la anterior
+                                  if (strlit->length() + yyleng + 2 >= MAX_STRING_LITERAL_SIZE) {
+                                    lexical_log << "String literal surpasses maximum size\n";
+                                    exit(-1);
+                                  }
+                                  if (yytext[yyleng-1] == '\\') {
+                                    strlit->append(yytext, yyleng-1);
+                                    BEGIN(STRING_ESCAPE_COND);
+                                  } else {
+                                    yymore();
+                                  }
+                                }
+<STRING_ESCAPE_COND>"\\"        strlit->push_back('\\'), BEGIN(STRING_COND);
+<STRING_ESCAPE_COND>"\""        strlit->push_back('\"'), BEGIN(STRING_COND);
+<STRING_ESCAPE_COND>"t"         strlit->push_back('\t'), BEGIN(STRING_COND);
+<STRING_ESCAPE_COND>"r"         strlit->push_back('\r'), BEGIN(STRING_COND);
+<STRING_ESCAPE_COND>"n"         strlit->push_back('\n'), BEGIN(STRING_COND);
+<STRING_ESCAPE_COND>.           {
+                                  lexical_log << "Unknown escape sequence\n";
+                                  BEGIN(STRING_COND);
+                                }
+<STRING_COND>"\""               {
+                                  strlit->append(yytext, yyleng-1);
+                                  BEGIN(INITIAL);
+                                  return yy::parser::make_STRLIT(strlit);
+                                }
 
- /* Keywords */
-program                             return PROGRAM;
-function                            return FUNCTION;
-const                               return CONST;
-var                                 return VAR;
-integer                             return INTEGER;
-begin                               return BEGINN;
-end                                 return END;
-if                                  return IF;
-then                                return THEN;
-else                                return ELSE;
-while                               return WHILE;
-do                                  return DO;
-for                                 return FOR;
-to                                  return TO;
-write                               return WRITE;
-read                                return READ;
 
- /* Operators */
-";"                                 return SEMICOL;
-":"                                 return COLON;
-"."                                 return DOT;
-","                                 return COMMA;
-"+"                                 return PLUSOP;
-"-"                                 return MINUSOP;
-"*"                                 return MULTOP;
-"/"                                 return DIVOP;
-"("                                 return LBRACKET;
-")"                                 return RBRACKET;
-":="                                return ASSIGNOP;
+{integer}                       {
+                                  long long val = atoll(yytext);
+                                  if (val >= (1LL<<31) || val < -(1LL<<31))
+                                    warning_log << "Integer literal out of range\n";
+                                  return yy::parser::make_INTLIT(val);
+                                }
+
 
  /* Identifiers */
-({letter}|_)({letter}|{digit}|_){0,15}    {
-                                            string* lexem = new string(yytext, yyleng);
-                                            yylval.name = lexem;
-                                            return NAME;
-                                          }
+({letter}|_)({letter}|{digit}|_){0,15}  {
+                                  std::string* lexem = new std::string(yytext, yyleng);
+                                  return yy::parser::make_NAME(lexem);
+                                }
 
-({letter}|_)({letter}|{digit}|_){16,16}   {
-                                            yyless(16);
-                                            logerr("Oversized identifier (using: %16s)", yytext);
-                                            BEGIN(LARGE_ID_COND); //TODO devolver algo?
-                                            return NAME;
-                                          }
-<LARGE_ID_COND>({letter}|{digit}|_)       ;
-<LARGE_ID_COND>.                          { yyless(0); BEGIN(INITIAL); }
+({letter}|_)({letter}|{digit}|_){16,16} {
+                                  lexical_log << "Oversized identifier\n";
+                                  exit(-1);
+                                }
 
  /*TODO Con ayuda de una condición, podemos protegernos de un overflow*/
-{unrecognized}+                           logerr("Unrecognized symbols %s", yytext);
+{unrecognized}+                 lexical_log << "Unrecognized symbols " << yytext << "\n";
 
 
 %%
 
-void logerr(const string& fmt, ...) {
-    // numErrors++;
-    // va_list args;
-    // va_start(args, fmt);
-
-    // fprintf(stderr, "\n%d: ERROR: ", yylineno);
-    // vfprintf(stderr, fmt, args);
-    // fprintf(stderr, "\n\n");
-    // va_end(args);
-}
-
-void logwar(const string& fmt, ...) {
-    // numWarnings++;
-    // va_list args;
-    // va_start(args, fmt);
-
-    // fprintf(stderr, "\n%d: WARNING: ", yylineno);
-    // vfprintf(stderr, fmt, args);
-    // fprintf(stderr, "\n\n");
-    // va_end(args);
-}
-
-// int main() {
-//   int i;
-//   while (i=yylex()) {
-//     printf("Token: %s\t; Lexeme: `%s`\n", int_to_lexeme(i), yytext);
-//   }
-//   printf("END OF LEXICAL ANALYSIS\n");
-//   if (numErrors || numWarnings) {
-//     printf("\n--------------------\n\n");
-//     fprintf(stderr, "COMPILATION PROBLEMS: %d errors %d warnings\n", numErrors, numWarnings);
-//     return -1;
-//   }
-//   return 0;
-// }
+//TODO It would be nice to have a function to debug the parser
 

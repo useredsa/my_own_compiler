@@ -3,25 +3,26 @@
 
 #include <iostream>
 
-class ErrorLogger {
+namespace compiler {
+
+class Logger {
   public:
-    ErrorLogger(std::ostream& os) : os(os) {
+    Logger(std::ostream& os) : os_(os) {
         counter = 0;
     }
 
     template<typename T>
     std::ostream& operator<< (const T& val) {
         ++counter;
-        os << Type() << " Error: ";
-        os << val;
-        return os;
+        os_ << prefix() << val;
+        return os_;
     }
 
     inline int GetCounter() { return counter; }
 
   protected:
-    virtual std::string Type() = 0;
-    std::ostream& os;
+    virtual std::string prefix() = 0;
+    std::ostream& os_;
 
   private:
     int counter;
@@ -41,14 +42,36 @@ class ErrorLogger {
  *         Semantic Error: Aunque se le ve bien fresco, este es un error diferente
  *         Semantic Error: Y con este ya llevamos 3
  */
-static class SemanticErrorLogger : public ErrorLogger {
+extern class SemanticErrorLogger : public Logger {
   public:
-    SemanticErrorLogger(std::ostream& os) : ErrorLogger(os) {}
+    SemanticErrorLogger(std::ostream& os) : Logger(os) {}
   
   protected:
-    std::string Type() {
-        return "Semantic";
+    inline std::string prefix() {
+        return "Semantic Error: ";
     }
-} semantic_error(std::cerr);
+} semantic_log;
+
+extern class LexicalErrorLogger : public Logger {
+  public:
+    LexicalErrorLogger(std::ostream& os) : Logger(os) {}
+
+  protected:
+    inline std::string prefix() {
+        return "Lexical Error: ";
+    }
+} lexical_log;
+
+extern class WarningsLogger : public Logger {
+  public:
+    WarningsLogger(std::ostream& os) : Logger(os) {}
+
+  protected:
+    inline std::string prefix() {
+        return "Warning: ";
+    }
+} warning_log;
+
+} // namespace compiler
 
 #endif // ERRORS_HPP_
