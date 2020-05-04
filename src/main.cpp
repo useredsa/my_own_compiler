@@ -1,13 +1,11 @@
-#include <stdlib.h>
-
 #include <iostream>
 #include <fstream>
-
 #include "syntax.tab.hpp"
 #include "builtin.hpp"
 #include "ast-printer.hpp"
+#include "llvm.hpp"
 
-extern ast::Program* ast_root;
+extern ast::Prog* ast_root;
 
 int main(int argc, char* argv[]) {
     // cerr << argc << endl;
@@ -28,8 +26,9 @@ int main(int argc, char* argv[]) {
         compiler::AstPrinter printer(std::cout);
         printer(ast_root);
 
-        // ofstream os("bin/a.llvm");
-        // ast_root->llvm_output(os);
+        // std::ofstream os("bin/a.llvm");
+        // compiler::llvm::Translator translator(os);
+        // translator.Output(ast_root);
     }
     std::cout << "Everthing OK!\n";
 }

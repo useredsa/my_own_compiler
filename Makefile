@@ -82,7 +82,7 @@ cleandep:
 
 tidy:
 	@for src in $(SRCS) ; do \
-		clang-tidy $(SRCD)/$$src -- $(CXXFLAGS) ; \
+		clang-tidy $$src -format-style=google -checks={bugprone-*,cert-*,clang-analyzer-*,cppcoreguidelines-*,google-*,misc-*,modernize-*,performance-*,portability-*,readibility-*} -- $(CXXFLAGS) $(INC) ; \
 	done
 
 run: $(TARGET) tests/example_program4.mp

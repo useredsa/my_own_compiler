@@ -3,61 +3,50 @@
 
 #include <iostream>
 #include <string>
+#include "ast_defs.hpp"
+#include "ast.hpp"
 #include "identifiers.hpp"
 
 namespace compiler {
 
-namespace ast {
-
-class Type {
-  public:
-    Type() {  };
-
-    virtual const std::string& llvm_name() = 0;
-
-    void print(int lvl) {
-        std::cout << std::string(lvl, '\t') << "type\n";
-    }
-};
-
-} // namespace ast
-
-
-
 namespace builtin {
 
-inline ast::Id* IntTypeId() {
-    static ast::Id* ptr = nullptr;
-    if (ptr == nullptr)
+inline identifiers::Id* IntTypeId() {
+    static identifiers::Id* ptr = nullptr;
+    if (ptr == nullptr) {
         ptr = identifiers::GetId("integer");
+    }
     return ptr;
 }
 
 class IntType : public ast::Type { //TODO transform to singleton?
   public:
-    inline const std::string& llvm_name() {
-        return llvm_name_;
+    inline std::string llvm_name() override {
+        return "i32";
     }
 
-  private:
-    static const std::string llvm_name_;
+    inline int def_alignment() override {
+        return 4;
+    }
 };
 
-inline ast::Id* StrTypeId() {
-    static ast::Id* ptr = nullptr;
-    if (ptr == nullptr)
+inline identifiers::Id* StrTypeId() {
+    static identifiers::Id* ptr = nullptr;
+    if (ptr == nullptr) {
         ptr = identifiers::GetId("str");
+    }
     return ptr;
 }
 
 class StrType : public ast::Type {
   public:
-    inline const std::string& llvm_name() {
-        return llvm_name_;
+    inline std::string llvm_name() override {
+        return "i8*";
     }
 
-  private:
-    static const std::string llvm_name_;
+    inline int def_alignment() override {
+        return 8;
+    }
 };
 
 void RegisterTypes();

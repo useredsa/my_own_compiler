@@ -5,43 +5,23 @@
 #include <vector>
 #include <variant>
 #include "expressions.hpp"
+#include "identifiers.hpp"
 
 namespace compiler {
 
 namespace ast {
 
-class Id;
-struct Assig;
-struct IfStmt;
-struct WhileStmt;
-struct ForStmt;
-struct WriteStmt;
-struct ReadStmt;
-struct CompStmt;
-struct EmptyStmt;
-
-using Stmt = std::variant<
-    Assig*,
-    IfStmt*,
-    WhileStmt*,
-    ForStmt*,
-    WriteStmt*,
-    ReadStmt*,
-    CompStmt*,
-    EmptyStmt*
->;
-
 struct EmptyStmt {  };
 
 struct CompStmt : public std::vector<Stmt> {
-    CompStmt(std::vector<Stmt>&& stmts) : std::vector<Stmt>(stmts) {  }
+    explicit CompStmt(std::vector<Stmt>&& stmts) : std::vector<Stmt>(stmts) {  }
 };
 
 struct Assig {
-    Id* id;
+    RVar rvar;
     Exp exp;
 
-    Assig (Id* id, Exp exp) : id(id), exp(exp) {  }
+    Assig (RVar rvar, Exp exp) : rvar(rvar), exp(exp) {  }
 };
 
 struct IfStmt {
@@ -65,24 +45,26 @@ struct WhileStmt {
 };
 
 struct ForStmt {
-    Id* id;  //TODO Implement scoping?
+    RVar rvar;  //TODO Implement scoping?
     Exp start_exp;
     Exp end_exp;
     Stmt stmt;
 
-    ForStmt(Id* id, Exp start_exp, Exp end_exp, Stmt stmt);
+   ForStmt(RVar rvar, Exp start_exp, Exp end_exp, Stmt stmt)
+        : rvar(rvar), start_exp(start_exp), end_exp(end_exp), stmt(stmt) {  }
+
 };
 
 struct WriteStmt {
     std::vector<Exp> exps;
 
-    WriteStmt(std::vector<Exp>&& exps) : exps(exps) {  }
+    explicit WriteStmt(std::vector<Exp>&& exps) : exps(exps) {  }
 };
 
 struct ReadStmt {
-    std::vector<Id*> ids;
+    std::vector<RVar> rvars;
 
-    ReadStmt(std::vector<Id*>&& ids) : ids(ids) {  }
+    explicit ReadStmt(std::vector<RVar>&& rvars) : rvars(rvars) {  }
 };
 
 } // namespace ast

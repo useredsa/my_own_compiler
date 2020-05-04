@@ -1,8 +1,10 @@
-#ifndef PRINT_HPP
-#define PRINT_HPP
+#ifndef AST_PRINTER_HPP
+#define AST_PRINTER_HPP
 
 #include <iomanip>
 #include "ast.hpp"
+#include "identifiers.hpp"
+#include "statements.hpp"
 #include "log.hpp"
 
 namespace compiler {
@@ -19,33 +21,28 @@ class AstPrinter {
         std::visit(*this, exp);
     }
 
-    void operator()(const ast::Program* prog) {
+    void operator()(const ast::Prog* prog) {
         log << "Prog\n";
-        log << "Function Decls:\n";
-        PrintIndented(prog->funcs);
-        log << "Main:\n";
-        PrintIndented(&prog->main);
+        log << "funDecls:\n";
+        PrintIndented(prog->funs);
         log << "\n";
     }
 
-    void operator()(const ast::Dcls* dcls) {
-        log << "Dcls:\n";
-        log << "Constants\n";
-        PrintIndented(dcls->constants);
-        log << "Variables\n";
-        PrintIndented(dcls->variables);
+    void operator()(const ast::RVar rvar) {
+        log << "RVar " << rvar.id->name() << "\n";
+    }
+    void operator()(const ast::Var* var) {
+        log << "Var " << var->id()->name() << " = \n";
+        PrintIndented(var->val());
     }
 
-    void operator()(const ast::Function* func) {
-        log << "Function " << func->name() << "\n";
-        log << "Return Type:\n";
-        PrintIndented(func->type());
-        log << "Signature\n";
-        PrintIndented(func->signature());
-        log << "Arguments names:\n";
+    void operator()(const ast::Fun* func) {
+        log << "Fun " << func->id()->name() << "\n";
+        log << "type: " << func->rtype().id->name() << "\n";
+        log << "arguments:\n";
         PrintIndented(func->args());
-        log << "Declarations\n";
-        PrintIndented(func->dcls());
+        log << "declarations\n";
+        PrintIndented(func->var_dcls());
         log << "Statements:\n";
         PrintIndented(func->stmts());
         log << "\n";
@@ -56,13 +53,15 @@ class AstPrinter {
     }
 
     void operator()(const ast::CompStmt* stmts) {
-        for (auto stmt : *stmts)
+        for (auto stmt : *stmts) {
             (*this)(stmt);
+        }
     }
 
     void operator()(const ast::Assig* assig) {
         log << "Assig\n";
-        PrintIndented(assig->id);
+        PrintIndented(assig->rvar);
+        log << "=\n";
         PrintIndented(assig->exp);
     }
 
@@ -84,7 +83,7 @@ class AstPrinter {
 
     void operator()(const ast::ForStmt* for_stmt) {
         log << "ForStmt\n";
-        PrintIndented(for_stmt->id);
+        PrintIndented(for_stmt->rvar);
         log << " :=\n";
         PrintIndented(for_stmt->start_exp);
         log << "To\n";
@@ -95,12 +94,16 @@ class AstPrinter {
 
     void operator()(const ast::ReadStmt* read_stmt) {
         log << "ReadStmt\n";
-        PrintIndented(read_stmt->ids);
+        PrintIndented(read_stmt->rvars);
     }
 
     void operator()(const ast::WriteStmt* write_stmt) {
         log << "WriteStmt\n";
         PrintIndented(write_stmt->exps);
+    }
+
+    void operator()(const ast::NoExp* no_exp) {
+        log << "NoExp\n";
     }
 
     void operator()(const ast::IntLit* int_lit) {
@@ -111,26 +114,26 @@ class AstPrinter {
         log << "StrLit " << std::quoted(*str_lit->lit) << "\n";
     }
 
-    void operator()(const ast::FuncCall* call) {
-        log << "FuncCall to " << call->id->name() << "\n";
+    void operator()(const ast::FunCall* call) {
+        log << "FunCall to " << call->rfun.id->name() << "\n";
         PrintIndented(call->args);
     }
 
-    void operator()(const ast::Id* id) {
+    void operator()(const identifiers::Id* id) {
         log << "Id " << id->name() << "\n";
     }
 
     template<ast::UnaryOperators op>
     void operator()(const ast::UnaOp<op>* una_op) {
-        log << "UnaOp<" << (char) op << ">\n";
+        log << "UnaOp<" << static_cast<char>(op) << ">\n";
         PrintIndented(una_op->exp);
     }
 
     template<ast::BinaryOperators op>
     void operator()(const ast::BinOp<op>* bin_op) {
-        log << "BinOp<" << (char) op << ">\n";
+        log << "BinOp<" << static_cast<char>(op) << ">\n";
         PrintIndented(bin_op->lhs);
-        log << (char) op << "\n";
+        log << static_cast<char>(op) << "\n";
         PrintIndented(bin_op->rhs);
     }
 
@@ -167,13 +170,14 @@ class AstPrinter {
     template<typename T>
     inline void PrintIndented(std::vector<T> vec) {
         log.AddPrefix("    ");
-        for (auto obj : vec)
+        for (auto obj : vec) {
             (*this)(obj);
+        }
         log.PopPrefix("    ");
     }
 };
 
 } // namespace compiler
 
-#endif // PRINT_HPP
+#endif // AST_PRINTER_HPP
 

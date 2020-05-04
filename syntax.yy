@@ -22,6 +22,8 @@
     #include <iostream>
     #include <string>
     #include "ast.hpp"
+    #include "statements.hpp"
+    #include "expressions.hpp"
     #include "types.hpp"
     namespace ast         = compiler::ast;
     namespace builtin     = compiler::builtin;
@@ -42,7 +44,7 @@
     YY_DECL;
     extern int yylineno;
 
-    ast::Program* ast_root;
+    ast::Prog* ast_root;
     // void yyerror(const char* msg);
 }
 
@@ -52,62 +54,65 @@
 /* Grammar tokens */
 
     // Data Types
-%token INT                             "int"
-%token STR                             "str"
+%token INT                                    "int"
+%token STR                                    "str"
     // Literals
-%token INTLIT                         "int_lit"
-%token STRLIT                         "str_lit"
+%token INTLIT                                 "int_lit"
+%token STRLIT                                 "str_lit"
     // Keywords
-%token PROGRAM                        "program"
-%token FUNCTION                       "function"
-%token CONST                          "const"
-%token VAR                            "var"
-%token BEGINN                         "begin"
-%token END                            "end"
-%token IF                             "if"
-%token THEN                           "then"
-%token ELSE                           "else"
-%token WHILE                          "while"
-%token DO                             "do"
-%token FOR                            "for"
-%token TO                             "to"
-%token WRITE                          "write"
-%token READ                           "read"
+%token PROGRAM                                "program"
+%token FUNCTION                               "function"
+%token CONST                                  "const"
+%token VAR                                    "var"
+%token BEGINN                                 "begin"
+%token END                                    "end"
+%token IF                                     "if"
+%token THEN                                   "then"
+%token ELSE                                   "else"
+%token WHILE                                  "while"
+%token DO                                     "do"
+%token FOR                                    "for"
+%token TO                                     "to"
+%token WRITE                                  "write"
+%token READ                                   "read"
     // Operators
-%token NAME                           "name"
-%token SEMICOL                        ";"
-%token COLON                          ":"
-%token DOT                            "."
-%token COMMA                          ","
-%token PLUSOP                         "+"
-%token MINUSOP                        "-"
-%token MULTOP                         "*"
-%token DIVOP                          "/"
-%token LBRACKET                       "("
-%token RBRACKET                       ")"
-%token ASSIGNOP                       ":="
+%token NAME                                   "name"
+%token SEMICOL                                ";"
+%token COLON                                  ":"
+%token DOT                                    "."
+%token COMMA                                  ","
+%token PLUSOP                                 "+"
+%token MINUSOP                                "-"
+%token MULTOP                                 "*"
+%token DIVOP                                  "/"
+%token LBRACKET                               "("
+%token RBRACKET                               ")"
+%token ASSIGNOP                               ":="
 
 /* Nodes Types */
-%type <int>                           "int_lit"
-%type <std::string*>                  "str_lit"
-%type <std::string*>                  "name"
-%type <ast::Id*>                      id_dcl
-%type <ast::Id*>                      id_ref
-%type <ast::Id*>                      type
-%type <std::vector<ast::Id*>*>        ids_dcl
-%type <std::vector<ast::Id*>*>        read_list
-%type <ast::Function*>                function
-%type <std::vector<ast::Function*>*>  functions
-%type <ast::Dcls*>                    declarations
-%type <ast::Stmt>                     statement
-%type <std::vector<ast::Stmt>*>       semcolon_sep_stmts_
-%type <std::vector<ast::Stmt>*>       compound_statement
-%type <std::vector<ast::Stmt>*>       semcolon_sep_stmts
-%type <ast::Constants*>               constants
-%type <ast::Exp>                      expression
-%type <std::vector<ast::Exp>*>        print_list
-%type <std::vector<ast::Exp>*>        comma_sep_exps
-%type <std::vector<ast::Exp>*>        comma_sep_exps_
+%type <int>                                   "int_lit"
+%type <std::string*>                          "str_lit"
+%type <std::string*>                          "name"
+%type <identifiers::Id*>                      new_id
+%type <std::vector<identifiers::Id*>*>        comma_sep_dcl
+%type <identifiers::Id*>                      id_ref
+%type <ast::RType>                            rtype
+%type <ast::RVar>                             rvar
+%type <ast::RFun>                             rfun
+%type <std::vector<ast::RVar>*>               comma_sep_rvar
+%type <std::vector<ast::RVar>*>               comma_sep_rvar_
+%type <ast::Fun*>                             function
+%type <std::vector<ast::Fun*>*>               functions
+%type <std::vector<ast::Var*>*>               declarations
+%type <ast::Stmt>                             statement
+%type <std::vector<ast::Stmt>*>               semcolon_sep_stmts_
+%type <std::vector<ast::Stmt>*>               compound_statement
+%type <std::vector<ast::Stmt>*>               semcolon_sep_stmts
+// %type <ast::Constants*>                       constants
+%type <ast::Exp>                              expression
+%type <std::vector<ast::Exp>*>                print_list
+%type <std::vector<ast::Exp>*>                comma_sep_exps
+%type <std::vector<ast::Exp>*>                comma_sep_exps_
 
 
 
@@ -132,8 +137,13 @@
 
 program:
     "program" "name" "(" ")" ";" functions declarations compound_statement "." {
-        ast_root = new ast::Program(std::move(*$6), $7, std::move(*$8));
+        ast_root = new ast::Prog(std::move(*$2),
+                                 std::move(*$6),
+                                 std::move(*$7),
+                                 std::move(*$8));
+        delete $2;
         delete $6;
+        delete $7;
         delete $8;
     }
     |
@@ -149,33 +159,33 @@ functions:
     }
     |
     {
-        $$ = new std::vector<ast::Function*>();
+        $$ = new std::vector<ast::Fun*>();
     }
     ;
 
 function:
-    "function" id_dcl
+    "function" id_ref
     {
-        identifiers::AddNameScope(ast::kCronological);
+        identifiers::AddNameScope(identifiers::kCronological);
     }
-    "(" "const" ids_dcl ":" type ")"
+    "(" "const" comma_sep_dcl ":" rtype ")"
     {
         // Declaration of comma_sep_exps
-        for (ast::Id* id : *$6) {
-            id->RegisterAsVariable($8);
+        for (identifiers::Id* id : *$6) {
+            id->RegisterAsVariable(new ast::Var(id, $8));
         }
     }
-    ":" type declarations compound_statement {
-        std::vector<std::pair<ast::Id*, ast::Id*>> args;
+    ":" rtype declarations compound_statement {
+        std::vector<ast::Var*> args;
         args.reserve($6->size());
-        for (ast::Id* id : *$6) {
-            args.emplace_back($8, id);
+        for (identifiers::Id* id : *$6) {
+            args.push_back(id->var());
         }
-        $$ = new ast::Function($12, $2, args, $13, std::move(*$14));
-        delete $6;
-        delete $14;
-
+        $$ = new ast::Fun($2, $12, std::move(args), std::move(*$13), std::move(*$14));
         identifiers::AbandonCurrentNameScope();
+        delete $6;
+        delete $13;
+        delete $14;
     }
     |
     error declarations compound_statement {
@@ -184,9 +194,13 @@ function:
     ;
 
 declarations:
-    declarations "var" ids_dcl ":" type ";" {
+    declarations "var" comma_sep_dcl ":" rtype ";" {
         $$ = $1;
-        $$->AddIdentifiers(*$3, $5);
+        for (identifiers::Id* id : *$3) {
+            auto* var = new ast::Var(id, $5);
+            id->RegisterAsVariable(var);
+            $$->push_back(var);
+        }
         delete $3;
     }
     |
@@ -197,7 +211,7 @@ declarations:
     }
     |
     {
-        $$ = new ast::Dcls();
+        $$ = new std::vector<ast::Var*>();
     }
     ;
 
@@ -235,7 +249,7 @@ statement:
         delete $1;
     }
     |
-    id_ref ":=" expression {
+    rvar ":=" expression {
         $$ = new ast::Assig($1, $3);
     }
     |
@@ -251,7 +265,7 @@ statement:
         $$ = new ast::WhileStmt($2, $4);
     }
     | //TODO hay que añadir un namescope? o la variable debe estar ya declarada?
-    "for" id_dcl ":=" expression "to"
+    "for" rvar ":=" expression "to"
     expression "do" statement {
         $$ = new ast::ForStmt($2, $4, $6, $8);
     }
@@ -261,7 +275,7 @@ statement:
         delete $3;
     }
     |
-    "read"  "(" read_list  ")" {
+    "read"  "(" comma_sep_rvar_  ")" {
         $$ = new ast::ReadStmt(std::move(*$3));
         delete $3;
     }
@@ -314,7 +328,7 @@ expression:
     "(" expression ")" {
         $$ = $2;
     }
-    | id_ref {
+    | rvar {
         $$ = $1;
     }
     |
@@ -326,19 +340,9 @@ expression:
         $$ = new ast::StrLit($1);
     }
     |
-    id_ref "(" comma_sep_exps ")" {
-        $$ = new ast::FuncCall($1, std::move(*$3));
+    rfun "(" comma_sep_exps ")" {
+        $$ = new ast::FunCall($1, std::move(*$3));
         delete $3;
-    }
-    ;
-
-type:
-    "int" {
-        $$ = builtin::IntTypeId();
-    }
-    |
-    "str" {
-        $$ = builtin::StrTypeId();
     }
     ;
 
@@ -366,32 +370,63 @@ print_list:
     }
     ;
 
-read_list:
-    read_list "," id_ref {
+comma_sep_rvar:
+    comma_sep_rvar_ {
+        $$ = $1;
+    }
+    |
+    {
+        $$ = new std::vector<ast::RVar>();
+    }
+
+comma_sep_rvar_:
+    comma_sep_rvar_ "," rvar {
         $$ = $1;
         $$->push_back($3);
     }
     |
-    id_ref {
-        $$ = new std::vector<ast::Id*>();
+    rvar {
+        $$ = new std::vector<ast::RVar>();
         $$->push_back($1);
     }
     ;
 
 // Additions to the grammar
-ids_dcl:
-    ids_dcl "," id_dcl {
+rtype:
+    "int" {
+        $$ = ast::RType(builtin::IntTypeId());
+    }
+    |
+    "str" {
+        $$ = ast::RType(builtin::StrTypeId());
+    }
+    ;
+
+rvar:
+    id_ref {
+        $$ = ast::RVar($1);
+    }
+    ;
+
+rfun:
+    id_ref {
+        $$ = ast::RFun($1);
+    }
+    ;
+
+comma_sep_dcl:
+    comma_sep_dcl "," new_id {
         $$ = $1;
         $$->push_back($3);
     }
     |
-    id_dcl {
-        $$ = new std::vector<ast::Id*>();
+    new_id {
+        $$ = new std::vector<identifiers::Id*>();
         $$->push_back($1);
     }
     ;
 
-id_dcl:
+new_id:
     "name" {
         $$ = identifiers::NewId(std::move(*$1));
         delete $1;

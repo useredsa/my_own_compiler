@@ -14,11 +14,6 @@ namespace builtin {
  */
 void RegisterBuiltins();
 
-/**
- * @brief Outputs as global variables the program's str literals
- */
-void LlvmPutStrLits(std::ostream& os);
-
 } // namespace builtin
 
 } // namespace compiler

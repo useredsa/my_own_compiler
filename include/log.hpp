@@ -7,7 +7,7 @@ namespace compiler {
 
 class Logger {
   public:
-    Logger(std::ostream& os) : os_(os) {
+    explicit Logger(std::ostream& os) : os_(os) {
         counter = 0;
     }
 
@@ -18,7 +18,13 @@ class Logger {
         return os_;
     }
 
-    inline int GetCounter() { return counter; }
+    inline int GetCounter() {
+        return counter;
+    }
+
+    inline std::ostream& os() {
+        return os_;
+    }
 
   protected:
     virtual std::string prefix() = 0;
@@ -44,7 +50,7 @@ class Logger {
  */
 extern class SemanticErrorLogger : public Logger {
   public:
-    SemanticErrorLogger(std::ostream& os) : Logger(os) {}
+    explicit SemanticErrorLogger(std::ostream& os) : Logger(os) {}
   
   protected:
     inline std::string prefix() {
@@ -54,7 +60,7 @@ extern class SemanticErrorLogger : public Logger {
 
 extern class LexicalErrorLogger : public Logger {
   public:
-    LexicalErrorLogger(std::ostream& os) : Logger(os) {}
+    explicit LexicalErrorLogger(std::ostream& os) : Logger(os) {}
 
   protected:
     inline std::string prefix() {
@@ -64,7 +70,7 @@ extern class LexicalErrorLogger : public Logger {
 
 extern class WarningsLogger : public Logger {
   public:
-    WarningsLogger(std::ostream& os) : Logger(os) {}
+    explicit WarningsLogger(std::ostream& os) : Logger(os) {}
 
   protected:
     inline std::string prefix() {

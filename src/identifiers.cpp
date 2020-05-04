@@ -1,116 +1,81 @@
 #include "identifiers.hpp"
 
-#include "function.hpp"
-#include <assert.h>
-#include <unordered_map>
+#include <cassert>
 #include <stack>
-
-template<typename T>
-using vector = std::vector<T>;
-using string = std::string;
-template<typename T, typename U>
-using pair = std::pair<T, U>;
+#include <unordered_map>
+#include "ast.hpp"
 
 namespace compiler {
 
-namespace ast {
+namespace identifiers {
 
-bool Id::RegisterFunction(Function* func) {
+using std::vector;
+using std::string;
+using std::pair;
+using ast::Type;
+using ast::Var;
+using ast::Fun;
+
+bool Id::RegisterFunction(Fun* func) {
     switch (abstracts_) {
         case kUnresolved:
             abstracts_ = kFunctions;
-            ref.funcs = std::vector<Function*>();
+            ref.funs = std::vector<Fun*>();
             // Deliberate fall-through
         case kFunctions:
-            if (can_be_called(func->signature()) != nullptr)
+            if (can_be_called(func->args()) != nullptr) {
                 return false;
-            ref.funcs.push_back(func);
+            }
+            ref.funs.push_back(func);
             return true;
         default:
             return false;
     }
 }
 
-bool Id::RegisterAsVariable(Id* type) {
-    if (abstracts_ != kUnresolved)
+bool Id::RegisterAsVariable(Var* var) {
+    if (abstracts_ != kUnresolved) {
         return false;
+    }
     abstracts_ = kVariable;
-    ref.var = new Var(this, type);
-    return true;
-}
-
-bool Id::RegisterAsConstant(IntLit* val) {
-    if (abstracts_ != kUnresolved)
-        return false;
-    abstracts_ = kConstant;
-    ref.cons = new Constant(this, val);
+    ref.var = var;
     return true;
 }
 
 bool Id::RegisterAsType(Type* type) {
-    if (abstracts_ != kUnresolved)
+    if (abstracts_ != kUnresolved) {
         return false;
+    }
     abstracts_ = kType;
     ref.type = type;
     return true;
 }
 
-Function* Id::can_be_called(const std::vector<Id*>& signature) {
-    if (abstracts_ != kFunctions)
+Fun* Id::can_be_called(const std::vector<Var*>& signature) {
+    if (abstracts_ != kFunctions) {
         return nullptr;
-    for (auto func : ref.funcs) {
-        if (func->signature() == signature)
-            return func;
+    }
+    for (Fun* fun : ref.funs) {
+        if (signature.size() != fun->args().size()) {
+            continue;
+        }
+        for (size_t i = 0; i < signature.size(); ++i) {
+            if (signature[i]->rtype().ty != fun->args()[i]->rtype().ty) //TODO comprobación errónea
+                continue;
+        }
+        return fun;
     }
     return nullptr;
 }
 
-// Id* Id::exp_type() {
-//     assert(abstracts_ == kVariable);
-//     return ref.var->type;
-// }
-
-// std::string Id::llvm_eval(std::ostream& os, int& local_var_count) {
-//     if (abstracts_ == kVariable) {
-//         std::string ref = "%" + std::to_string(local_var_count++);
-//         os << "\t" << ref << " = " << "load "
-//            << exp_type()->llvm_type_name()
-//            << ", " << exp_type()->llvm_type_name() << "* %" << name_
-//            << ", align 4\n";
-//         return ref;
-//     }
-//     if (abstracts_ == kConstant) {
-//         //TODO
-//     }
-//     //TODO y otro error pero este debe comprobarse antes :/
-//     return "ERROR";
-// }
-
-// void Id::llvm_var_alloca(std::ostream& os) {
-//     assert(abstracts_ == kVariable);
-//     os << "\t%" << name_ << " = alloca " << ref.var->type->llvm_type_name()
-//        << ", align 4\n";
-// }
-
-} // namespace ast
-
-
-
-namespace identifiers {
-
-using ast::Id;
-using ast::NameScope;
-using ast::NameScopeType;
-using ast::NameScopeType::kAcronological;
-
 struct NameInfo {
-    std::stack<pair<int, Id*>> active_declarations;
+    std::stack<pair<size_t, Id*>> active_declarations;
     vector<Id*> ids;
 };
 
 vector<NameScope*> program_scopes;
 vector<NameScope*> active_scopes; // Behaves as stack
-vector<int> acronological_scopes;
+vector<size_t> acronological_scopes;
 std::unordered_map<string, NameInfo> name_table;
 
 
@@ -119,49 +84,51 @@ NameScope* current_name_scope() {
 }
 
 NameScope* AddNameScope(NameScopeType type) {
-    NameScope* scope = new NameScope{(active_scopes.empty()? nullptr : active_scopes.back()),
+    auto* scope = new NameScope{(active_scopes.empty()? nullptr : active_scopes.back()),
                                      type};
     program_scopes.push_back(scope);
-    if (type == kAcronological)
+    if (type == kAcronological) {
         acronological_scopes.push_back(active_scopes.size());
+    }
     active_scopes.push_back(scope);
     return scope;
 }
 
 void AbandonCurrentNameScope() {
-    assert(active_scopes.size() > 1);
-    NameScope* popped = active_scopes.back();
+    assert(active_scopes.size() > (size_t) 1);
     active_scopes.pop_back();
-    if (acronological_scopes.back() >= (int) active_scopes.size())
+    if (acronological_scopes.back() >= active_scopes.size()) {
         acronological_scopes.pop_back();
+    }
 }
 
 /**
  * Declares an identifier in an active scope
  */
-Id* NewId(string&& name, NameScope* scope, int scope_pos) {
+Id* NewId(string&& name, NameScope* scope, size_t scope_pos) {
     NameInfo& info = name_table[name];
-    Id* id = new Id(scope, std::move(name));
+    auto* id = new Id(scope, std::move(name));
     info.ids.push_back(id);
     info.active_declarations.emplace(scope_pos, id);
     return id;
 }
 
 Id* NewId(string&& name) {
-    return NewId(std::move(name), active_scopes.back(), (int) active_scopes.size()-1);
+    return NewId(std::move(name), active_scopes.back(), active_scopes.size()-1);
 }
 
 Id* GetId(string&& name) {
     NameInfo& info = name_table[name];
-    int last_acronological = acronological_scopes.back();
+    size_t last_acronological = acronological_scopes.back();
     while (not info.active_declarations.empty()) {
         auto [pos, id] = info.active_declarations.top();
         // If the last declaration of a variable is still active
-        if (pos < (int) active_scopes.size() and id->namescope() == active_scopes[pos]) {
+        if (pos < active_scopes.size() and id->namescope() == active_scopes[pos]) {
             // check if belongs to a name scope under the
             // last active acronological scope
-            if (pos >= last_acronological)
+            if (pos >= last_acronological) {
                 return id;
+            }
             break;
         }
         info.active_declarations.pop();

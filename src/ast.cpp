@@ -3,38 +3,71 @@
 #include <iostream>
 #include "builtin.hpp"
 #include "types.hpp"
+#include "expressions.hpp"
+
+using std::vector;
+using std::string;
 
 namespace compiler {
 
 namespace ast {
 
-Program::Program(std::vector<Function*>&& funcs, Dcls* decls, std::vector<Stmt>&& stmts)
-    : funcs(funcs),
-      main(builtin::IntTypeId(),
-           identifiers::GetId("main"),
-           std::vector<std::pair<Id*, Id*>>(),
-           decls,
-           std::move(stmts)) {  }
+Var::Var(identifiers::Id* id, RType rtype, Exp val)
+     : id_(id), rtype_(rtype), val_(val) {
+    id_->RegisterAsVariable(this);
+}
 
-// void Program::llvm_output(std::ostream& os, int local_var_count) {
-//     os << "; ModuleID = '<stdin>'\n";
-//     os << "source_filename = \"TODO\"\n";
-//     os << "target datalayout = \"e-m:e-i64:64-f80:128-n8:16:32:64-S128\"\n";
-//     os << "target triple = \"x86_64-pc-linux-gnu\"\n";
-//     os << "\n";
-//     builtin::LlvmPutStrLits(os);
-//     os << "\n\n";
+Var::Var(identifiers::Id* id, RType rtype)
+     : Var(id, rtype, new ast::NoExp) {
 
-//     for (Function* func : *funcs_) {
-//         func->llvm_put(os);
+}
+
+// void Dcls::AddConstants(const std::vector<std::pair<Id*, IntLit*>>&  cons) {
+//     for (auto [id, val] : cons) {
+//         if (!id->RegisterAsConstant(val)) {
+//             //TODO semantic_log << "ERROR..."
+//         }
+//         constants.push_back(id);
 //     }
-//     main_.llvm_put(os);
-    
-//     os << "declare i32 @__isoc99_scanf(i8*, ...)\n";
-//     os << "declare i32 @printf(i8*, ...)\n";
-//     os << "declare i64 @strlen(i8*)\n";
-//     os << "declare i8* @strcpy(i8*, i8*)\n";
 // }
+
+// void Dcls::AddIdentifiers(const std::vector<Id*>& ids, Id* type) {
+//     for (Id* id : ids) {
+//         if (!id->RegisterAsVariable(type)) {
+//             semantic_log << "ERROR: identifier " <<  id->name() << " already in use. Unavailable to define as a variable\n";
+//         }
+//         variables.push_back(id);
+//     }
+// }
+
+Fun::Fun(identifiers::Id* id,
+         RType rtype,
+         vector<Var*>&& args,
+         vector<Var*>&& var_dcls,
+         vector<Stmt>&& stmts)
+    : id_(id),
+      rtype_(rtype),
+      args_(args),
+      var_dcls_(var_dcls),
+      stmts_(stmts) {
+    std::cerr << "registering " << id->name() << std::endl;
+    if (!id->RegisterFunction(this)) {
+        //TODO semantic_log << "ERROR: the function cannot be named " << name << " a variable or a function with the same signature is registered with that name\n";
+    }
+}
+
+Prog::Prog(string&& name,
+           vector<Fun*>&& funs,
+           vector<Var*>&& dcls,
+           vector<Stmt>&& stmts)
+    : name(name),
+      funs(funs) {
+    this->funs.push_back(new Fun(identifiers::NewId("main"),
+                                 RType(builtin::IntTypeId()),
+                                 {},
+                                 std::move(dcls),
+                                 std::move(stmts)));
+}
 
 } //namespace ast
 

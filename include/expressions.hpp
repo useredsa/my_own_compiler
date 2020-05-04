@@ -1,44 +1,24 @@
 #ifndef EXPRESSIONS_HPP
 #define EXPRESSIONS_HPP
 
+#include <assert.h>
 #include <vector>
 #include <string>
 #include <variant>
+#include "ast_defs.hpp"
 
 namespace compiler {
 
 namespace ast {
 
-enum UnaryOperators : char {
-    kUnaMinus = '-',
+/**
+ * @brief Can be used where an expression is optional.
+ * 
+ * For instance, in the declaration of variables.
+ */
+struct NoExp {
+    
 };
-
-enum BinaryOperators : char {
-    kPlus     = '+',
-    kBinMinus = '-',
-    kAsterisk = '*',
-    kSlash    = '/',
-};
-
-template<UnaryOperators op>  struct UnaOp;
-template<BinaryOperators op> struct BinOp;
-class Id;
-struct IntLit;
-struct StrLit;
-struct FuncCall;
-
-
-using Exp = std::variant<
-    UnaOp<kUnaMinus>*,
-    BinOp<kPlus>*,
-    BinOp<kBinMinus>*,
-    BinOp<kAsterisk>*,
-    BinOp<kSlash>*,
-    Id*,
-    IntLit*,
-    StrLit*,
-    FuncCall*
->;
 
 /**
  * @brief An integer literal
@@ -46,7 +26,11 @@ using Exp = std::variant<
 struct IntLit {
     int lit;
 
-    IntLit(int lit = 0) : lit(lit) {  };
+    /**
+     * The default value is provided because bison needs a default
+     * constructor.
+     */
+    explicit IntLit(int lit = 0) : lit(lit) {  };
 };
 
 /** String literals of the program */
@@ -59,9 +43,23 @@ struct StrLit {
     std::string* lit;
     std::string llvm_id;
 
-    StrLit(std::string* lit = nullptr); //TODO added for bison
+    /**
+     * @brief This constructor is used for parsing.
+     * 
+     * A default value is provided because bison needs one,
+     * but you shouldn't instantiate the struct with a nullptr.
+     */
+    explicit StrLit(std::string* lit = nullptr)
+        : StrLit(lit, "@.strlit." + std::to_string(program_str_lits.size())) {  }
 
-    StrLit(std::string* lit, const std::string& llvm_id);
+    /**
+     * @brief For builtin specific literals, it's possible to specify
+     * the id used in the code translation
+     */
+    StrLit(std::string* lit, std::string llvm_id)  : lit(lit), llvm_id(llvm_id) {
+        assert(lit != nullptr);
+        program_str_lits.push_back(this);
+    }
 
     //TODO add destructor that erases from the list!
 };
@@ -69,11 +67,11 @@ struct StrLit {
 /**
  * @brief A function call
  */
-struct FuncCall {
-    Id* id;
+struct FunCall {
+    RFun rfun;
     std::vector<Exp> args;
 
-    FuncCall(Id* id, std::vector<Exp>&& args) : id(id), args(args) {  };
+    FunCall(RFun rfun, std::vector<Exp>&& args) : rfun(rfun), args(args) {  };
 };
 
 /**
@@ -83,7 +81,7 @@ template<UnaryOperators op>
 struct UnaOp {
     Exp exp;
 
-    UnaOp(Exp exp) : exp(exp) {  };
+    explicit UnaOp(Exp exp) : exp(exp) {  };
 };
 
 /**
