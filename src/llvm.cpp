@@ -176,7 +176,7 @@ void Translator::operator()(IfStmt* if_stmt) {
     }
     os << "fi" << label_num << ":\n";
     // } else {
-    //     semantic_error << "Incompatible type in if condition: expected integer\n";
+    //     semantic_error << "Incompatible type in if condition: expected int\n";
     // }
 }
 
@@ -195,7 +195,7 @@ void Translator::operator()(WhileStmt* while_stmt) {
     os << "\tbr label %whilecomp" << label_num << "\n";
     os << "afterwhile" << label_num << ":\n";
     // } else {
-    //     semantic_error << "Incompatible type in while condition: expected integer\n";
+    //     semantic_error << "Incompatible type in while condition: expected int\n";
     // }
     // //TODO
 }
@@ -204,10 +204,10 @@ void Translator::operator()(ForStmt* for_stmt) {
     // if (start_exp->exp_type() != IntTypeId() ||
     //     end_exp->exp_type() != IntTypeId()) {
     //     if (start_exp->exp_type() != IntTypeId()) {
-    //         semantic_error << "Incompatible type in initial value: expected integer\n";
+    //         semantic_error << "Incompatible type in initial value: expected int\n";
     //     }
     //     if (end_exp->exp_type() != IntTypeId()) {
-    //         semantic_error << "Incompatible type in final value: expected integer\n";
+    //         semantic_error << "Incompatible type in final value: expected int\n";
     //     }
     // }  //TODO Arreglar la cutrez y no ejecutar lo siguiente
     // //TODO mover a otro sitio

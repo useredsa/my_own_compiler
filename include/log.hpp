@@ -48,35 +48,19 @@ class Logger {
  *         Semantic Error: Aunque se le ve bien fresco, este es un error diferente
  *         Semantic Error: Y con este ya llevamos 3
  */
-extern class SemanticErrorLogger : public Logger {
+extern class BasicLogger : public Logger {
   public:
-    explicit SemanticErrorLogger(std::ostream& os) : Logger(os) {}
+    explicit BasicLogger(std::ostream& os, std::string prefix)
+        : Logger(os), prefix_(std::move(prefix)) {  }
   
   protected:
     inline std::string prefix() {
-        return "Semantic Error: ";
+        return prefix_;
     }
-} semantic_log;
 
-extern class LexicalErrorLogger : public Logger {
-  public:
-    explicit LexicalErrorLogger(std::ostream& os) : Logger(os) {}
-
-  protected:
-    inline std::string prefix() {
-        return "Lexical Error: ";
-    }
-} lexical_log;
-
-extern class WarningsLogger : public Logger {
-  public:
-    explicit WarningsLogger(std::ostream& os) : Logger(os) {}
-
-  protected:
-    inline std::string prefix() {
-        return "Warning: ";
-    }
-} warning_log;
+  private:
+    std::string prefix_;
+} semantic_log, lexical_log, warning_log, internal_log;
 
 } // namespace compiler
 

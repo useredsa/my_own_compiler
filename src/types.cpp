@@ -1,7 +1,5 @@
 #include "types.hpp"
 
-#include "function.hpp"
-
 using std::string;
 
 namespace compiler {
@@ -9,7 +7,7 @@ namespace compiler {
 namespace builtin {
 
 void RegisterTypes() {
-    identifiers::GetId("integer")->RegisterAsType(new IntType());
+    identifiers::GetId("int")->RegisterAsType(new IntType());
     // new IntTypeBinPlus(); //TODO las funciones se registran solas lo cual es raro
     // new StrTypeBinPlus();
     

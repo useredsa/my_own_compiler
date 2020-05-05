@@ -8,7 +8,7 @@ begin
     write(bar)
 end;
 
-var a : int;
+var a,i : int;
 
 begin
     read(a);

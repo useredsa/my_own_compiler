@@ -172,7 +172,7 @@ function:
     {
         // Declaration of comma_sep_exps
         for (identifiers::Id* id : *$6) {
-            id->RegisterAsVariable(new ast::Var(id, $8));
+            new ast::Var(id, $8);
         }
     }
     ":" rtype declarations compound_statement {
@@ -197,9 +197,7 @@ declarations:
     declarations "var" comma_sep_dcl ":" rtype ";" {
         $$ = $1;
         for (identifiers::Id* id : *$3) {
-            auto* var = new ast::Var(id, $5);
-            id->RegisterAsVariable(var);
-            $$->push_back(var);
+            $$->push_back(new ast::Var(id, $5));
         }
         delete $3;
     }

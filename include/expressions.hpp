@@ -21,7 +21,7 @@ struct NoExp {
 };
 
 /**
- * @brief An integer literal
+ * @brief An int literal
  */
 struct IntLit {
     int lit;
@@ -37,7 +37,7 @@ struct IntLit {
 extern std::vector<StrLit*> program_str_lits;
 
 /**
- * @brief A string literal
+ * @brief A str literal
  */
 struct StrLit {
     std::string* lit;

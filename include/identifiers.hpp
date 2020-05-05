@@ -2,13 +2,22 @@
 #define IDENTIFIERS_HPP
 
 #include <assert.h>
+#include <iostream>
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <utility>
+#include <stack>
 #include "ast_defs.hpp"
+#include "log.hpp"
 
 namespace compiler {
 
 namespace identifiers {
+
+class NameResolution;
+
+
 
 enum NameScopeType {
     kCronological,
@@ -20,9 +29,28 @@ enum NameScopeType {
  * 
  * Comparable by address.
  */
-struct NameScope {
-    NameScope* parent;
-    NameScopeType type;
+class NameScope {
+  public:
+    NameScope(NameScopeType type, NameScope* parent);
+
+    inline NameScope* parent() const {
+        return parent_;
+    }
+
+    inline NameScopeType type() const {
+        return type_;
+    }
+
+    inline int depth() const {
+        return depth_;
+    }
+
+  private:
+    NameScope* parent_;
+    NameScopeType type_;
+    int depth_;
+
+    friend NameResolution;
 };
 
 /**
@@ -92,12 +120,6 @@ class Id {
      */
     bool RegisterAsType(ast::Type* type);
 
-    /**
-     * @returns the function associated with this identifier or nullptr if there
-     * isn't such a function.
-     */
-    ast::Fun* can_be_called(const std::vector<ast::Var*>& signature);
-
     inline bool IsAVariable() {
         return abstracts_ == kVariable;
     } //TODO considerar hacer estas 3 funciones devolver un puntero
@@ -107,13 +129,25 @@ class Id {
     }
 
     inline ast::Var* var() {
-        assert(abstracts_ == kVariable);
-        return ref.var;
+        if (abstracts_ == kVariable) {
+            return ref.var;
+        }
+        if (abstracts_ == kRedirected) {
+            return ref.id->ref.var;
+        }
+        internal_log << "Unexpected call to Id::var()!" << std::endl;
+        exit(-1);
     }
 
     inline ast::Type* type() {
-        assert(abstracts_ == kType);
-        return ref.type;
+        if (abstracts_ == kType) {
+            return ref.type;
+        }
+        if (abstracts_ == kRedirected) {
+            return ref.id->ref.type;
+        }
+        internal_log << "Unexpected call to Id::type()!" << std::endl;
+        exit(-1);
     }
 
   private:
@@ -128,6 +162,7 @@ class Id {
         ast::Type* type;
         ast::Var* var;
         std::vector<ast::Fun*> funs;
+        Id* id;
 
         AbstractionReference() {
             type = nullptr;
@@ -135,7 +170,16 @@ class Id {
 
         ~AbstractionReference() {  }
     } ref;
+
+    friend NameResolution;
 };
+
+struct NameInfo {
+    std::stack<std::pair<size_t, Id*>> active_declarations;
+    std::vector<Id*> ids;
+};
+
+extern std::unordered_map<std::string, NameInfo> name_table;
 
 NameScope* current_name_scope();
 

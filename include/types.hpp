@@ -14,7 +14,7 @@ namespace builtin {
 inline identifiers::Id* IntTypeId() {
     static identifiers::Id* ptr = nullptr;
     if (ptr == nullptr) {
-        ptr = identifiers::GetId("integer");
+        ptr = identifiers::GetId("int");
     }
     return ptr;
 }

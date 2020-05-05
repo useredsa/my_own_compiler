@@ -1,7 +1,6 @@
 #include "expressions.hpp"
 
 #include "log.hpp"
-#include "function.hpp"
 
 using std::vector;
 using std::string;

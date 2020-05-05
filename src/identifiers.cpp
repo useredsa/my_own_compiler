@@ -1,9 +1,7 @@
 #include "identifiers.hpp"
 
-#include <cassert>
-#include <stack>
-#include <unordered_map>
 #include "ast.hpp"
+#include "log.hpp"
 
 namespace compiler {
 
@@ -23,18 +21,17 @@ bool Id::RegisterFunction(Fun* func) {
             ref.funs = std::vector<Fun*>();
             // Deliberate fall-through
         case kFunctions:
-            if (can_be_called(func->args()) != nullptr) {
-                return false;
-            }
             ref.funs.push_back(func);
             return true;
         default:
+        semantic_log << "Redefinition of " << name_ << " (as a function)\n";
             return false;
     }
 }
 
 bool Id::RegisterAsVariable(Var* var) {
     if (abstracts_ != kUnresolved) {
+        semantic_log << "Redefinition of " << name_ << " (as a variable)\n";
         return false;
     }
     abstracts_ = kVariable;
@@ -44,6 +41,7 @@ bool Id::RegisterAsVariable(Var* var) {
 
 bool Id::RegisterAsType(Type* type) {
     if (abstracts_ != kUnresolved) {
+        semantic_log << "Redefinition of " << name_ << " (as a type)\n";
         return false;
     }
     abstracts_ = kType;
@@ -51,27 +49,18 @@ bool Id::RegisterAsType(Type* type) {
     return true;
 }
 
-Fun* Id::can_be_called(const std::vector<Var*>& signature) {
-    if (abstracts_ != kFunctions) {
-        return nullptr;
-    }
-    for (Fun* fun : ref.funs) {
-        if (signature.size() != fun->args().size()) {
-            continue;
-        }
-        for (size_t i = 0; i < signature.size(); ++i) {
-            if (signature[i]->rtype().ty != fun->args()[i]->rtype().ty) //TODO comprobación errónea
-                continue;
-        }
-        return fun;
-    }
-    return nullptr;
-}
 
-struct NameInfo {
-    std::stack<pair<size_t, Id*>> active_declarations;
-    vector<Id*> ids;
-};
+
+
+
+
+
+
+
+NameScope::NameScope(NameScopeType type, NameScope* parent)
+    : parent_(parent), type_(type), depth_(parent == nullptr? 0 : parent->depth_+1) {
+    
+}
 
 vector<NameScope*> program_scopes;
 vector<NameScope*> active_scopes; // Behaves as stack
@@ -84,8 +73,8 @@ NameScope* current_name_scope() {
 }
 
 NameScope* AddNameScope(NameScopeType type) {
-    auto* scope = new NameScope{(active_scopes.empty()? nullptr : active_scopes.back()),
-                                     type};
+    auto* scope = new NameScope(type,
+                                (active_scopes.empty()? nullptr : active_scopes.back()));
     program_scopes.push_back(scope);
     if (type == kAcronological) {
         acronological_scopes.push_back(active_scopes.size());
@@ -102,23 +91,7 @@ void AbandonCurrentNameScope() {
     }
 }
 
-/**
- * Declares an identifier in an active scope
- */
-Id* NewId(string&& name, NameScope* scope, size_t scope_pos) {
-    NameInfo& info = name_table[name];
-    auto* id = new Id(scope, std::move(name));
-    info.ids.push_back(id);
-    info.active_declarations.emplace(scope_pos, id);
-    return id;
-}
-
-Id* NewId(string&& name) {
-    return NewId(std::move(name), active_scopes.back(), active_scopes.size()-1);
-}
-
-Id* GetId(string&& name) {
-    NameInfo& info = name_table[name];
+Id* pop_unactive(NameInfo& info) {
     size_t last_acronological = acronological_scopes.back();
     while (not info.active_declarations.empty()) {
         auto [pos, id] = info.active_declarations.top();
@@ -133,6 +106,34 @@ Id* GetId(string&& name) {
         }
         info.active_declarations.pop();
     }
+    return nullptr;
+}
+
+/**
+ * Declares a new (it is known to be new) identifier in an active scope
+ */
+Id* NewId(string&& name, NameScope* scope, size_t scope_pos) {
+    NameInfo& info = name_table[name];
+    auto* id = new Id(scope, std::move(name));
+    info.ids.push_back(id);
+    info.active_declarations.emplace(scope_pos, id);
+    return id;
+}
+
+Id* NewId(string&& name) {
+    NameInfo& info = name_table[name];
+    if (Id* ptr = pop_unactive(info); ptr) {
+        return ptr;
+    }
+    return NewId(std::move(name), active_scopes.back(), active_scopes.size()-1);
+}
+
+Id* GetId(string&& name) {
+    NameInfo& info = name_table[name];
+    if (Id* ptr = pop_unactive(info); ptr) {
+        return ptr;
+    }
+    size_t last_acronological = acronological_scopes.back();
     return NewId(std::move(name), active_scopes[last_acronological], last_acronological);
 }
 

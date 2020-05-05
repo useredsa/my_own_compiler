@@ -38,7 +38,11 @@ class Var {
         return id_;
     }
 
-    inline RType rtype() const {
+    inline const RType& rtype() const {
+        return rtype_;
+    }
+
+    inline RType& rtype() {
         return rtype_;
     }
 
@@ -51,6 +55,8 @@ class Var {
     RType rtype_;
     Exp val_;
 };
+
+extern std::vector<Var*> program_vars;
 
 /**
  * @brief A function.

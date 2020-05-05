@@ -4,6 +4,7 @@
 #include "builtin.hpp"
 #include "ast-printer.hpp"
 #include "llvm.hpp"
+#include "id_resolution.hpp"
 
 extern ast::Prog* ast_root;
 
@@ -25,6 +26,9 @@ int main(int argc, char* argv[]) {
     } else {
         compiler::AstPrinter printer(std::cout);
         printer(ast_root);
+        std::cout.flush();
+
+        compiler::identifiers::NameResolution::Do();
 
         // std::ofstream os("bin/a.llvm");
         // compiler::llvm::Translator translator(os);
