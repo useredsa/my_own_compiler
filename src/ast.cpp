@@ -15,13 +15,13 @@ namespace ast {
 vector<Var*> program_vars;
 
 Var::Var(identifiers::Id* id, RType rtype, Exp val)
-     : id_(id), rtype_(rtype), val_(val) {
+        : id_(id), rtype_(rtype), val_(val) {
     id_->RegisterAsVariable(this);
     program_vars.push_back(this);
 }
 
 Var::Var(identifiers::Id* id, RType rtype)
-     : Var(id, rtype, new ast::NoExp) {
+        : Var(id, rtype, new ast::NoExp) {
 
 }
 
@@ -48,11 +48,11 @@ Fun::Fun(identifiers::Id* id,
          vector<Var*>&& args,
          vector<Var*>&& var_dcls,
          vector<Stmt>&& stmts)
-    : id_(id),
-      rtype_(rtype),
-      args_(args),
-      var_dcls_(var_dcls),
-      stmts_(stmts) {
+        : id_(id),
+          rtype_(rtype),
+          args_(args),
+          var_dcls_(var_dcls),
+          stmts_(stmts) {
     if (!id->RegisterFunction(this)) {
         //TODO semantic_log << "ERROR: the function cannot be named " << name << " a variable or a function with the same signature is registered with that name\n";
     }
@@ -62,8 +62,8 @@ Prog::Prog(string&& name,
            vector<Fun*>&& funs,
            vector<Var*>&& dcls,
            vector<Stmt>&& stmts)
-    : name(name),
-      funs(funs) {
+        : name(name),
+          funs(funs) {
     this->funs.push_back(new Fun(identifiers::GetId("main"),
                                  RType(builtin::IntTypeId()),
                                  {},

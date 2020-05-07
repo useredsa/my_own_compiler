@@ -9,7 +9,7 @@ const := 3;
 var a : integer
 var a,b,c integer;
 begin
-  a:=bbegin end.:=c;
+  a:=b:=c;
   write(a;
   if (a) write(a);
   if (a) then a+b

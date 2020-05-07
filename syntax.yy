@@ -1,4 +1,4 @@
-%require "3.5"                     // Force Version >= 3.5 (at least 3.2 for C++)
+%require "3.4"                     // Force Version >= 3.4 (at least 3.2 for C++)
 %language "c++"                    // Instruct Bison to generate a C++ parse file
 %defines                           // Create a header file
 %define parse.error verbose        // Set verbose errors
@@ -10,7 +10,7 @@
 
 %code top {
     /* Location(s): Near the top of the parser implementation file. It shouldn't
-     * be unnecessary.
+     * be necessary.
      */
 }
 
@@ -21,6 +21,7 @@
      */
     #include <iostream>
     #include <string>
+    #include "log.hpp"
     #include "ast.hpp"
     #include "statements.hpp"
     #include "expressions.hpp"
@@ -45,9 +46,7 @@
     extern int yylineno;
 
     ast::Prog* ast_root;
-    // void yyerror(const char* msg);
 }
-
 
 
 
@@ -115,8 +114,6 @@
 %type <std::vector<ast::Exp>*>                comma_sep_exps_
 
 
-
-
 /* Grammar Definitions */
 %start program                        // Start token
 %right "then" "else"                  // Solution to the "dangling else" problem
@@ -131,24 +128,25 @@
 
 
 
-
 /* Production Rules */
 %%
 
 program:
-    "program" "name" "(" ")" ";" functions declarations compound_statement "." {
-        ast_root = new ast::Prog(std::move(*$2),
-                                 std::move(*$6),
-                                 std::move(*$7),
-                                 std::move(*$8));
-        delete $2;
-        delete $6;
-        delete $7;
-        delete $8;
+    "program" "name"[name] "(" ")" ";" functions declarations compound_statement "." {
+        ast_root = new ast::Prog(std::move(*$name),
+                                 std::move(*$functions),
+                                 std::move(*$declarations),
+                                 std::move(*$compound_statement));
+        delete $name;
+        delete $functions;
+        delete $declarations;
+        delete $compound_statement;
+        if (yynerrs_) YYABORT;
     }
     |
-    error functions declarations compound_statement "." {
-        
+    error ";" { yyerrok; } functions declarations compound_statement "." {
+        //TODO
+        if (yynerrs_) YYABORT;
     }
     ;
 
@@ -161,35 +159,47 @@ functions:
     {
         $$ = new std::vector<ast::Fun*>();
     }
+    |
+    // errors
+    functions function { //TODO Podría ser un warning
+        $$ = $1;
+        $$->push_back($2);
+        yy::parser::error("syntax error, expecting \";\"");
+        yyerrok;
+    }
     ;
 
 function:
-    "function" id_ref
+    "function" id_ref[fun_name]
     {
         identifiers::AddNameScope(identifiers::kCronological);
     }
-    "(" "const" comma_sep_dcl ":" rtype ")"
+    "(" "const" comma_sep_dcl[args] ":" rtype[args_type] ")"
     {
-        // Declaration of comma_sep_exps
-        for (identifiers::Id* id : *$6) {
-            new ast::Var(id, $8);
+        // Declaration of comma_sep_ids
+        for (identifiers::Id* id : *$args) {
+            new ast::Var(id, $args_type);
         }
     }
-    ":" rtype declarations compound_statement {
+    ":" rtype[return_type] declarations compound_statement {
         std::vector<ast::Var*> args;
-        args.reserve($6->size());
-        for (identifiers::Id* id : *$6) {
+        args.reserve($args->size());
+        for (identifiers::Id* id : *$args) {
             args.push_back(id->var());
         }
-        $$ = new ast::Fun($2, $12, std::move(args), std::move(*$13), std::move(*$14));
+        $$ = new ast::Fun($fun_name,
+                          $return_type,
+                          std::move(args),
+                          std::move(*$declarations),
+                          std::move(*$compound_statement));
         identifiers::AbandonCurrentNameScope();
-        delete $6;
-        delete $13;
-        delete $14;
+        delete $args;
+        delete $declarations;
+        delete $compound_statement;
     }
     |
-    error declarations compound_statement {
-        
+    "function" error declarations compound_statement {
+        //TODO
     }
     ;
 
@@ -211,11 +221,33 @@ declarations:
     {
         $$ = new std::vector<ast::Var*>();
     }
+    |  // errors
+    declarations "var" error ";" {
+        yyerrok;
+    }
+    |
+    declarations "const" error ";" {
+        yyerrok;
+    }
+    |
+    declarations "var" comma_sep_dcl ":" rtype {
+        yy::parser::error("syntax error, expecting \";\"");
+        yyerrok;
+    }
+    |
+    declarations "const" constants {
+        yy::parser::error("syntax error, expecting \";\"");
+        yyerrok;
+    }
     ;
 
 compound_statement:
     "begin" semcolon_sep_stmts "end" {
         $$ = $2;
+    }
+    |
+    "begin" error "end" {
+        yyerrok;
     }
     ;
 
@@ -239,6 +271,11 @@ semcolon_sep_stmts_:
         $$ = new std::vector<ast::Stmt>();
         $$->push_back($1);
     }
+    |
+    // errors
+    error ";" { yyerrok; } statement {
+        //TODO No cargarse todos los tokens anteriores al error
+    }
     ;
 
 statement:
@@ -251,31 +288,55 @@ statement:
         $$ = new ast::Assig($1, $3);
     }
     |
-    "if" expression "then" statement {
-        $$ = new ast::IfStmt($2, $4);
+    "if" expression[cond] "then" statement[stmt] {
+        $$ = new ast::IfStmt($cond, $stmt);
     }
     |
-    "if" expression "then" statement "else" statement {
-        $$ = new ast::IfStmt($2, $4, $6);
+    "if" expression[cond] "then" statement[stmt] "else" statement[alt_stmt] {
+        $$ = new ast::IfStmt($cond, $stmt, $alt_stmt);
     }
     |
-    "while" expression "do" statement {
-        $$ = new ast::WhileStmt($2, $4);
+    "while" expression[cond] "do" statement[stmt] {
+        $$ = new ast::WhileStmt($cond, $stmt);
     }
-    | //TODO hay que añadir un namescope? o la variable debe estar ya declarada?
-    "for" rvar ":=" expression "to"
-    expression "do" statement {
-        $$ = new ast::ForStmt($2, $4, $6, $8);
+    | //TODO hay que añadir un namescope? o la variable debe estar ya declarada? Imagino que lo primero
+    "for" rvar[ctrl_var] ":=" expression[init_exp] "to"
+    expression[final_exp] "do" statement[body] {
+        $$ = new ast::ForStmt($ctrl_var, $init_exp, $final_exp, $body);
     }
     |
     "write" "(" print_list ")" {
-        $$ = new ast::WriteStmt(std::move(*$3));
-        delete $3;
+        $$ = new ast::WriteStmt(std::move(*$print_list));
+        delete $print_list;
     }
     |
-    "read"  "(" comma_sep_rvar_  ")" {
-        $$ = new ast::ReadStmt(std::move(*$3));
-        delete $3;
+    "read" "(" comma_sep_rvar[read_list] ")" {
+        $$ = new ast::ReadStmt(std::move(*$read_list));
+        delete $read_list;
+    }
+    |
+    // errors
+    "if" expression[cond] statement[stmt] {
+        $$ = new ast::EmptyStmt(); //TODO
+        yy::parser::error("syntax error, expecting \"then\"");
+    }
+    |
+    "while" expression[cond] statement[stmt] {
+        $$ = new ast::EmptyStmt(); //TODO
+        yy::parser::error("syntax error, expecting \"do\"");
+    }
+    |
+    "for" rvar[ctrl_var] ":=" error statement[stmt] {
+        $$ = new ast::EmptyStmt(); //TODO
+    }
+    |
+    "write" "(" error ")" {
+        $$ = new ast::EmptyStmt(); //TODO
+    }
+    |
+    "read" "(" error ")" {
+        $$ = new ast::EmptyStmt(); //TODO
+        yyerrok;
     }
     ;
 
@@ -326,7 +387,8 @@ expression:
     "(" expression ")" {
         $$ = $2;
     }
-    | rvar {
+    |
+    rvar {
         $$ = $1;
     }
     |
@@ -341,6 +403,14 @@ expression:
     rfun "(" comma_sep_exps ")" {
         $$ = new ast::FunCall($1, std::move(*$3));
         delete $3;
+    }
+    |
+    "(" error ")" {
+        yyerrok;
+    }
+    |
+    rfun "(" error ")" {
+        yyerrok;
     }
     ;
 
@@ -441,6 +511,6 @@ id_ref:
 %%
 
 void yy::parser::error(const std::string& m) {
-    std::cerr << "ERROR: " << m << '\n';
+    std::cerr << yylineno << ": ERROR: " << m << '\n';
 }
 
