@@ -51,7 +51,7 @@ class Logger {
 extern class BasicLogger : public Logger {
   public:
     explicit BasicLogger(std::ostream& os, std::string prefix)
-        : Logger(os), prefix_(std::move(prefix)) {  }
+        	: Logger(os), prefix_(std::move(prefix)) {  }
   
   protected:
     inline std::string prefix() {

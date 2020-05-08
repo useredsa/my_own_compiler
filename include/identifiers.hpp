@@ -72,7 +72,7 @@ enum NamedAbstractions {
  * It is important to differentiate between Id and Var (or Type or
  * Fun). The identifier (Id) is just the name (with the data associated
  * to the name itself, for scope resolution purposes), while the variable
- * (Var) hols the information of a variable.
+ * (Var) holds the information of a variable.
  */
 class Id {
   public:

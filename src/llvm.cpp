@@ -157,11 +157,8 @@ void Translator::operator()(Assig* assig) {
 
 void Translator::operator()(IfStmt* if_stmt) {
     // Refer to NOTE 1.
-    //TODO añadir la condición del if en otro sitio
-    // if (exp->exp_type() == IntTypeId()) {
     int label_num = local_var_count;  //TODO Llevar cuenta de las etiquetas? 
     ComputedExp cond_exp = Eval(if_stmt->exp);
-    // assert(cond_exp.type == IntTypeId()->type().ty); //TODO remove
     os << "\t%" << local_var_count << " = icmp ne i32 " << cond_exp.val << ", 0\n";
     os << "\tbr i1 %" << local_var_count++ << ", label %then" << label_num << ", label %"
        << (std::holds_alternative<EmptyStmt*>(if_stmt->alt_stmt)? "fi" : "else")
@@ -175,16 +172,12 @@ void Translator::operator()(IfStmt* if_stmt) {
         os << "\tbr label %fi" << label_num << "\n";
     }
     os << "fi" << label_num << ":\n";
-    // } else {
-    //     semantic_error << "Incompatible type in if condition: expected int\n";
-    // }
 }
 
 void Translator::operator()(WhileStmt* while_stmt) {
     int label_num = local_var_count;
     os << "\tbr label %whilecomp" << label_num << "\n";
     os << "whilecomp" << label_num << ":\n";
-    // if (while_stmt->exp->type() == IntTypeId()) { //TODO mover como con for
     ComputedExp cond_exp = Eval(while_stmt->exp);
     os << "\t%" << local_var_count << " = icmp ne i32 " << cond_exp.val << ", 0\n";
     os << "\tbr i1 %" << local_var_count++
@@ -194,24 +187,9 @@ void Translator::operator()(WhileStmt* while_stmt) {
     Output(while_stmt->stmt);
     os << "\tbr label %whilecomp" << label_num << "\n";
     os << "afterwhile" << label_num << ":\n";
-    // } else {
-    //     semantic_error << "Incompatible type in while condition: expected int\n";
-    // }
-    // //TODO
 }
 
 void Translator::operator()(ForStmt* for_stmt) {
-    // if (start_exp->exp_type() != IntTypeId() ||
-    //     end_exp->exp_type() != IntTypeId()) {
-    //     if (start_exp->exp_type() != IntTypeId()) {
-    //         semantic_error << "Incompatible type in initial value: expected int\n";
-    //     }
-    //     if (end_exp->exp_type() != IntTypeId()) {
-    //         semantic_error << "Incompatible type in final value: expected int\n";
-    //     }
-    // }  //TODO Arreglar la cutrez y no ejecutar lo siguiente
-    // //TODO mover a otro sitio
-
     int label_num = local_var_count;
     // control_id = begin  //TODO Lástima no aprovechar el contenido de assignment
     ComputedExp start_exp = Eval(for_stmt->start_exp);
@@ -240,10 +218,6 @@ void Translator::operator()(ForStmt* for_stmt) {
 
 void Translator::operator()(ReadStmt* read_stmt) {
     for (RVar rvar : read_stmt->rvars) {
-        // if (!id->IsAVariable()) { //TODO lo dicho, mover a otro sitio
-        //     //TODO y otro error más
-        //     continue;
-        // }
         os << "\t%" << local_var_count++ << " = call i32 (i8*, ...) "
            << "@__isoc99_scanf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* ";
         if (rvar.var->rtype().ty == IntTypeId()->type()) {
@@ -252,6 +226,7 @@ void Translator::operator()(ReadStmt* read_stmt) {
             os << "@.io.str";
         } else {
             //TODO imprimir error read no soporta cosas que no sean builtin -> a otro sitio
+            //DONE
         }
         os << ", i32 0, i32 0), " << rvar.var->rtype().ty->llvm_name() << "* %"
            << rvar.var->id()->name() << ")\n";
@@ -269,6 +244,7 @@ void Translator::operator()(WriteStmt* write_stmt) {
             os << "@.io.str";
         } else {
             //TODO imprimir error write no soporta cosas que no sean builtin
+            //DONE
         }
         os << ", i32 0, i32 0), " << eval.type->llvm_name() << " " << eval.val << ")\n";
     }
@@ -299,14 +275,12 @@ ComputedExp Translator::operator()(StrLit* str_lit) {
 }
 
 ComputedExp Translator::operator()(RVar rvar) {
-    // if (abstracts_ == kVariable) {
-        string ref = LocVar(local_var_count++);
-        Type* type = rvar.var->rtype().ty;
-        os << "\t" << ref << " = load " << type->llvm_name() << ", "
-           << type->llvm_name() << "* %" << rvar.var->id()->name() << ", align "
-           << type->def_alignment() << "\n";
-        return {type, ref};
-    // }
+    string ref = LocVar(local_var_count++);
+    Type* type = rvar.var->rtype().ty;
+    os << "\t" << ref << " = load " << type->llvm_name() << ", "
+        << type->llvm_name() << "* %" << rvar.var->id()->name() << ", align "
+        << type->def_alignment() << "\n";
+    return {type, ref};
     // if (abstracts_ == kConstant) {
     //     //TODO
     // }
@@ -369,61 +343,6 @@ ComputedExp Translator::operator()(FunCall* func_call) {
 //                                       std::vector<std::string*> params) {
 //     return "TODO";
 // }
-
-// class IntTypeBinPlus : public Fun {
-//   public:
-//     IntTypeBinPlus() : Fun(IntTypeId(),
-//                                 identifiers::GetId("operator+"),
-//                                 {{IntTypeId(), identifiers::GetId(".lhs")},
-//                                  {IntTypeId(), identifiers::GetId(".rhs")}},
-//                                 nullptr,
-//                                 nullptr) {  }
-    
-//     virtual string llvm_put_call(std::ostream& os,
-//                                  int& local_var_count,
-//                                  std::vector<string*> params) {
-//         assert(params.size() == 2);
-//         string ref = "%" + std::to_string(local_var_count++);
-//         os << "\t" << ref << " = add nsw i32 " << *params[0] << ", " 
-//            << *params[1] << "\n";
-//         return ref;
-//     }
-// };
-
-// class StrTypeBinPlus : public Fun {
-//   public:
-//     StrTypeBinPlus() : Fun(StrTypeId(),
-//                                 identifiers::GetId("operator+"),
-//                                 {{StrTypeId(), identifiers::GetId(".lhs")},
-//                                  {StrTypeId(), identifiers::GetId(".rhs")}},
-//                                 nullptr,
-//                                 nullptr) {  }
-    
-//     virtual string llvm_put_call(std::ostream& os,
-//                                  int& local_var_count,
-//                                  std::vector<string*> params) {
-//         assert(params.size() == 2);
-//         string len1 = "%" + std::to_string(local_var_count++);
-//         string len2 = "%" + std::to_string(local_var_count++);
-//         os << "\t" << len1 << " = call i64 @strlen(i8* " << *params[0] << ")\n";
-//         os << "\t" << len2 << " = call i64 @strlen(i8* " << *params[1] << ")\n";
-//         string lenNoNull = "%" + std::to_string(local_var_count++);
-//         os << "\t" << lenNoNull << " = add nsw i64 " << len1 << ", " << len2 << "\n";
-//         string len = "%" + std::to_string(local_var_count++);
-//         os << "\t" << len << " = add nsw i64 " << lenNoNull << ", 1" << "\n";
-//         string ref = "%" + std::to_string(local_var_count++);
-        
-//         os << "\t" << ref << " = alloca i8, i64 " << len << "\n";
-        
-//         os << "\t%" << local_var_count++ << " = call i8* @strcpy(i8* " << ref << ", "
-//            << "i8*" << *params[0] << ")\n";
-//         string end = "%" + std::to_string(local_var_count++);
-//         os << "\t" << end << " = getelementptr i8, i8* " << ref << ", i64 " << len1 << "\n";
-//         os << "\t%" << local_var_count++ << " = call i8* @strcpy(i8* " << end << ", "
-//            << "i8*" << *params[1] << ")\n";
-//         return ref;
-//     }
-// };
 
 inline ComputedExp Translator::Eval(Exp exp) {
     return std::visit(*this, exp);

@@ -29,6 +29,8 @@ int main(int argc, char* argv[]) {
         std::cout.flush();
 
         compiler::identifiers::NameResolution::Do();
+        compiler::identifiers::NameResolution name_resolver;
+        name_resolver(ast_root);
 
         // std::ofstream os("bin/a.llvm");
         // compiler::llvm::Translator translator(os);

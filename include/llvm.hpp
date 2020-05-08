@@ -18,9 +18,9 @@ namespace llvm {
  * Use cases: Result of an expression.
  * 
  * Examples:
- * {type -> IntType, var = 12}
- * {type -> IntType, var = "%var"}
- * {type -> StrType, var = "%7"}
+ * {type -> IntType, val = 12}
+ * {type -> IntType, val = "%var"}
+ * {type -> StrType, val = "%7"}
  */
 struct ComputedExp {
     ast::Type* type;
@@ -82,7 +82,6 @@ class Translator {
 
     void EasyAlloca(ast::Var* var);
     void EasyStore(const std::string& val, ast::Var* var);
-
 };
 
 } // namespace llvm

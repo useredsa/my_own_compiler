@@ -12,6 +12,13 @@ namespace compiler {
 
 namespace ast {
 
+Type::Type(identifiers::Id* id)
+        : id_(id) {
+    if (!id->RegisterAsType(this)) {
+        //TODO?
+    }
+}
+
 vector<Var*> program_vars;
 
 Var::Var(identifiers::Id* id, RType rtype, Exp val)
@@ -21,9 +28,7 @@ Var::Var(identifiers::Id* id, RType rtype, Exp val)
 }
 
 Var::Var(identifiers::Id* id, RType rtype)
-        : Var(id, rtype, new ast::NoExp) {
-
-}
+        : Var(id, rtype, new ast::NoExp) {  }
 
 // void Dcls::AddConstants(const std::vector<std::pair<Id*, IntLit*>>&  cons) {
 //     for (auto [id, val] : cons) {
@@ -64,7 +69,7 @@ Prog::Prog(string&& name,
            vector<Stmt>&& stmts)
         : name(name),
           funs(funs) {
-    this->funs.push_back(new Fun(identifiers::GetId("main"),
+    this->funs.push_back(new Fun(identifiers::GetId("main"),  //TODO Get Instead of New?
                                  RType(builtin::IntTypeId()),
                                  {},
                                  std::move(dcls),

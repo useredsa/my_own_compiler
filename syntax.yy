@@ -204,12 +204,12 @@ function:
     ;
 
 declarations:
-    declarations "var" comma_sep_dcl ":" rtype ";" {
+    declarations "var" comma_sep_dcl[ids] ":" rtype ";" {
         $$ = $1;
-        for (identifiers::Id* id : *$3) {
-            $$->push_back(new ast::Var(id, $5));
+        for (identifiers::Id* id : *$ids) {
+            $$->push_back(new ast::Var(id, $rtype));
         }
-        delete $3;
+        delete $ids;
     }
     |
     declarations "const" constants ";" {
@@ -245,7 +245,7 @@ compound_statement:
     "begin" semcolon_sep_stmts "end" {
         $$ = $2;
     }
-    |
+    |  // errors
     "begin" error "end" {
         yyerrok;
     }
