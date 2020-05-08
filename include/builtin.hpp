@@ -29,6 +29,14 @@ inline ast::Fun* ErrorFun() {
     return ptr;
 }
 
+// inline ast::Type* ErrorType() {
+//     static ast::Type* ptr = nullptr;
+//     if (ptr == nullptr) {
+//         ptr = new ast::Type(identifiers::NewId(".error_type"));
+//     }
+//     return ptr;
+// }
+
 } // namespace builtin
 
 } // namespace compiler

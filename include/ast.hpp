@@ -17,10 +17,17 @@ namespace ast {
  */
 class Type {
   public:
-    Type() {  };
+    Type(identifiers::Id* id);
+
+    inline identifiers::Id* id() const {
+        return id_;
+    }
 
     virtual std::string llvm_name() = 0;
     virtual int def_alignment() = 0;
+
+  private:
+    identifiers::Id* id_;
 };
 
 /**
@@ -77,6 +84,10 @@ class Fun {
     }
 
     inline RType rtype() const {
+        return rtype_;
+    }
+
+    inline RType& rtype() {
         return rtype_;
     }
 
