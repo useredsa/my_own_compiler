@@ -1,0 +1,47 @@
+= Compiler Design and Implementation
+Emilio Domínguez_Sánchez <emilio.dominugezs@um.es>; Rubén Gaspar_Marco <ruben.gasparm@um.es>
+:toc:
+//TODO incluir a Eduardo como profesor
+
+== Introduction
+This project corresponds to the practical part of the subject "`Compiladores`" (Compilers).
+The subject usually corresponds to the second year of Computer Engineering.
+Nonetheless, it is a third year subject for the students who
+decide to enroll in the simultaneous studies program of the University of Murcia.
+Both of us are currently studying Mathematics and Computer Engineering.
+
+Our initial task was writing a small compiler for a subset of Pascal's language.
+The essential features of the language were
+
+* Differentiation of constants and variables
+* Flow control through the `if`, `for` and `while` statements
+* Code reuse through `function` definitions
+
+But it was greatly simplified in comparison to Pascal.
+
+* Restricted to a single type: integer values
+* Absent of relational operators
+* Absent of a return statement
+
+We decided we wanted to focus on this project and implement a language with more features
+
+* Support for multiple types
+* Type checking
+* Advanced name resolution
+** Nested name scopes
+** Chronological name scopes which enforce the declaration of a name before its use
+** Achronological name scopes which don't
+* Return statement
+* Operator and function overloading
+* Llvm output
+
+
+We have spent most of the time learning and implementing a good system.
+Our focus has always been extensibility.
+The time we can dedicate to this subject is limited,
+but we were always thinking
+_"`If we were to implement this feature from language X,
+would it be easy with the code as is right now?`"_.
+This document serves the purpose of describing our work and
+our view on the code structure of a compiler.
+

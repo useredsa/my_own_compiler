@@ -11,3 +11,6 @@ build/*
 */syntax.tab*
 */lexicon.*
 */lex.yy.*
+
+# docs
+*.html
