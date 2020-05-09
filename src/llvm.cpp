@@ -95,7 +95,6 @@ void Translator::Output(Prog* prog) {
 }
 
 void Translator::Output(Fun* fun) {
-    //TODO fun->dcls()->llvm_put_constants(os);
     os << "; Function\n";
     os << "define " << fun->rtype().ty->llvm_name() << " @" << fun->llvm_name() << "(";
     const std::vector<Var*>& args = fun->args();
@@ -179,7 +178,8 @@ void Translator::operator()(Assig* assig) {
 
 void Translator::operator()(IfStmt* if_stmt) {
     // Refer to NOTE 1.
-    int label_num = local_var_count;  //TODO Llevar cuenta de las etiquetas? 
+    //IMPROVEMENT: We could assign more meaningful numbers to the labels
+    int label_num = local_var_count;
     ComputedExp cond_exp = Eval(if_stmt->exp);
     os << "\t%" << local_var_count << " = icmp ne i32 " << cond_exp.val << ", 0\n";
     os << "\tbr i1 %" << local_var_count++ << ", label %then" << label_num << ", label %"
@@ -304,23 +304,18 @@ ComputedExp Translator::operator()(RVar rvar) {
         << type->llvm_name() << "* %" << rvar.var->id()->name() << ", align "
         << type->def_alignment() << "\n";
     return {type, ref};
-    // if (abstracts_ == kConstant) {
-    //     //TODO
-    // }
-    // //TODO y otro error pero este debe comprobarse antes :/
-    // return "ERROR";
-    // }
 }
 
 template<ast::UnaryOperators op>
 ComputedExp Translator::operator()(UnaOp<op>* una_op) {
-    //TODO
-    return {IntTypeId()->type(), "%-2"};
+    ComputedExp exp = Eval(una_op->exp);
+    string ref = una_op->rfun.fun->
+                   llvm_put_call(os, local_var_count, {&exp});
+    return {una_op->rfun.fun->rtype().ty, ref};
 }
 
 template<ast::BinaryOperators op>
 ComputedExp Translator::operator()(BinOp<op>* bin_op) {
-    //TODO resolver las funciones en una pasada
     ComputedExp lhs_exp = Eval(bin_op->lhs);
     ComputedExp rhs_exp = Eval(bin_op->rhs);
     string ref = bin_op->rfun.fun->

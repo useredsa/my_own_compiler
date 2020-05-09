@@ -52,6 +52,8 @@ struct StrLit {
      */
     explicit StrLit(std::string* lit = nullptr)
         : StrLit(lit, "@.strlit." + std::to_string(program_str_lits.size())) {  }
+    //IMPROVEMENT There should be a a destructor that erased from the list
+    // in case we wanted to optimize and modify the ast
 
     /**
      * @brief For builtin specific literals, it's possible to specify
@@ -61,8 +63,6 @@ struct StrLit {
         assert(lit != nullptr);
         program_str_lits.push_back(this);
     }
-
-    //TODO add destructor that erases from the list!
 };
 
 /**
@@ -97,8 +97,6 @@ struct BinOp {
     Exp lhs;
     Exp rhs;
 
-    //TODO estoy suponiendo el tipo de ambos operandos es int.
-    // Hay que comprobar tipos y buscar el operador apropiado.
     BinOp(Exp lhs, Exp rhs)
         : rfun(identifiers::GetId(std::string(".operator") + static_cast<char>(op))),
           lhs(lhs),

@@ -122,7 +122,7 @@ class Id {
 
     inline bool IsAVariable() {
         return abstracts_ == kVariable;
-    } //TODO considerar hacer estas 3 funciones devolver un puntero
+    }
 
     inline bool IsAType() {
         return abstracts_ == kType;
@@ -203,7 +203,7 @@ Id* NewId(std::string&& name);
  * 
  * Name resolution techniques apply. The Id may be unresolved.
  */
-Id* GetId(std::string&& name); //TODO error when calling with "agag"
+Id* GetId(std::string&& name);
 
 } // namespace identifiers
 

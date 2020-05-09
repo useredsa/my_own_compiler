@@ -13,6 +13,39 @@ namespace compiler {
 
 namespace identifiers {
 
+class ImaginaryErrorType : public ast::Type {
+  public:
+    ImaginaryErrorType(identifiers::Id* id) : Type(id) {}
+
+    virtual inline std::string llvm_name() override {
+        return ".error_type";
+    }
+
+    virtual inline int def_alignment() override {
+        return 0;
+    }
+};
+
+inline ast::Fun* ErrorFun() {
+    static ast::Fun* ptr = nullptr;
+    if (ptr == nullptr) {
+        ptr = new ast::Fun(identifiers::NewId(".error_function"),
+                           ast::RType(builtin::IntTypeId()),
+                           {},
+                           {},
+                           {});
+    }
+    return ptr;
+}
+
+inline ast::Type* ErrorType() {
+    static ast::Type* ptr = nullptr;
+    if (ptr == nullptr) {
+        ptr = new ImaginaryErrorType(identifiers::NewId(".error_type"));
+    }
+    return ptr;
+}
+
 /*
  * @brief Binds NamedAbstractions who own a name (the name cannot be overloaded).
  */
@@ -58,7 +91,6 @@ void NameResolution::SecondPass() {
         var->rtype().ty = var->rtype().id->type();
     }
     // Check for repeated functions (once we can check the actual types of their arguments)
-    //TODO and update references to the return type of each one of them
     for (auto& [name, info] : name_table) {
         for (Id* id : info.ids) {
             if (id->abstracts_ == kFunctions) {
@@ -74,11 +106,12 @@ void NameResolution::SecondPass() {
                                          << " at the same scope\n";
                         }
                     }
-                    ast::RType& rtype = id->ref.funs[i]->rtype(); //
-                    while (rtype.id->abstracts_ == kRedirected)  //TODO REVISAR
-                        rtype.id = rtype.id->ref.id;             //
-                    if (not rtype.id->IsAType()) {               //
-                        semantic_log << rtype.id->name() << " is not a type!\n";
+                    ast::RType& rtype = id->ref.funs[i]->rtype();
+                    if (rtype.id->abstracts_ == kRedirected)
+                        rtype.id = rtype.id->ref.id;
+                    if (not rtype.id->IsAType()) {
+                        semantic_log << "Return type " << rtype.id->name()
+                                     << " is not a type!\n";
                         rtype.id->abstracts_ = kRedirected;
                         rtype.id->ref.id = builtin::IntTypeId();
                     } else {
@@ -122,7 +155,7 @@ ast::Fun* NameResolution::FromFunSig(Id* id, const std::vector<ast::Type*>& sign
         if (info.ids[index]->scope_ != id->scope_->parent_)
             break;
     }
-    return builtin::ErrorFun();
+    return ErrorFun();
 }
 
 void NameResolution::Do() {
@@ -158,7 +191,6 @@ void NameResolution::operator()(ast::Stmt& stmt) {
 }
 
 void NameResolution::operator()(ast::EmptyStmt* empty) {
-    //TODO?
 }
 
 void NameResolution::operator()(ast::CompStmt* stmts) {
@@ -170,7 +202,7 @@ void NameResolution::operator()(ast::CompStmt* stmts) {
 void NameResolution::operator()(ast::Assig* assig) {
     ast::Type* lhs_type = GetType(assig->rvar);
     ast::Type* rhs_type = GetType(assig->exp);
-    if (lhs_type != rhs_type and rhs_type != nullptr and lhs_type != nullptr)  //TODO 
+    if (lhs_type != rhs_type)
         semantic_log << "Cannot convert " << rhs_type->id()->name()
                      << " to " << lhs_type->id()->name() << " in assignment\n";
     if (assig->rvar.var->is_constant())
@@ -234,8 +266,7 @@ void NameResolution::operator()(ast::WriteStmt* write_stmt) {
     for (ast::Exp& exp : write_stmt->exps) {
         type = GetType(exp);
         if (type != builtin::IntTypeId()->ref.type and
-            type != builtin::StrTypeId()->ref.type and
-            type != nullptr)  //TODO
+            type != builtin::StrTypeId()->ref.type)
             semantic_log << "Incompatible type in write statement:"
                          << " unexpected " << type->id()->name()
                          << " expected " << builtin::IntTypeId()->name()
@@ -252,7 +283,7 @@ ast::Type* NameResolution::GetType(ast::RVar& rvar) {
 }
 
 ast::Type* NameResolution::operator()(ast::NoExp* no_exp) {
-    return nullptr;  //TODO?
+    return ErrorType();
 }
 
 ast::Type* NameResolution::operator()(ast::IntLit* int_lit) {
@@ -269,22 +300,22 @@ ast::Type* NameResolution::operator()(ast::FunCall* call) {
         args_types.push_back(GetType(arg));
     }
     ast::Fun* fun = FromFunSig(call->rfun.id, args_types);
-    if ((call->rfun.fun = fun) == builtin::ErrorFun()) {
+    if ((call->rfun.fun = fun) == ErrorFun()) {
         semantic_log << "Invalid call to function "
                      << call->rfun.id->name() << '\n';
-        return nullptr;  //TODO
+        return ErrorType();
     } else {
         return fun->rtype().ty;
     }
 }
 
 ast::Type* NameResolution::operator()(ast::RVar& rvar) {
-    while (rvar.id->abstracts_ == kRedirected) //TODO esto debería ser un if porque ya está acortado
+    if (rvar.id->abstracts_ == kRedirected)
         rvar.id = rvar.id->ref.id;
 
     if (not rvar.id->IsAVariable()) {
         semantic_log << rvar.id->name() << " is not a variable!\n";
-        return nullptr;  //TODO
+        return ErrorType();
     }
     rvar.var = rvar.id->ref.var;
 
@@ -293,8 +324,13 @@ ast::Type* NameResolution::operator()(ast::RVar& rvar) {
 
 template<ast::UnaryOperators op>
 ast::Type* NameResolution::operator()(ast::UnaOp<op>* una_op) {
-    GetType(una_op->exp);  //TODO
-    return builtin::IntTypeId()->ref.type;  //TODO
+    ast::Type* type = GetType(una_op->exp);
+    una_op->rfun.fun = FromFunSig(una_op->rfun.id, {type});
+    if (una_op->rfun.fun == ErrorFun()) {
+        semantic_log << "Invalid use of operator " << static_cast<char>(op) << '\n';
+        return ErrorType();
+    }
+    return una_op->rfun.fun->rtype().ty;
 }
 
 template<ast::BinaryOperators op>
@@ -303,12 +339,11 @@ ast::Type* NameResolution::operator()(ast::BinOp<op>* bin_op) {
     ast::Type* rhs_type = GetType(bin_op->rhs);
 
     bin_op->rfun.fun = FromFunSig(bin_op->rfun.id, {lhs_type, rhs_type});
-    if (bin_op->rfun.fun == builtin::ErrorFun()) {
+    if (bin_op->rfun.fun == ErrorFun()) {
         semantic_log << "Invalid use of operator " << static_cast<char>(op) << '\n';
-        return nullptr;  //TODO
-    } else {
-        return bin_op->rfun.fun->rtype().ty;
+        return ErrorType();
     }
+    return bin_op->rfun.fun->rtype().ty;
 }
 
 template<typename T>

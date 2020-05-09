@@ -1,5 +1,5 @@
 (************************
- * Fichero de prueba nº 1
+ * Test file nº 1
  ************************)
 
 program test1 ();

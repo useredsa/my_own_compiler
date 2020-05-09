@@ -82,19 +82,15 @@ read                            return yy::parser::token::READ;
  /* Strings */
 "\""                            {
                                   strlit = new std::string();
-                                  //yymore();  //TODO Esto supongo que ya no tiene sentido
                                   BEGIN(STRING_COND);
                                 }
 <STRING_COND>"\n"               {
                                   delete strlit;
                                   lexical_log << "Unclosed String\n";
-                                  yyless(yyleng-1);  //TODO Esto supongo que sobra tambié
                                   BEGIN(INITIAL);
                                   return yy::parser::token::STRLIT;
                                 }
 <STRING_COND>[^\"\n]            {
-                                  //TODO No recuerdo por qué era el "+ 2", así que he
-                                  //     dejado una comparación equivalente a la anterior
                                   if (strlit->length() + yyleng + 2 >= MAX_STRING_LITERAL_SIZE) {
                                     lexical_log << "String literal surpasses maximum size\n";
                                     exit(-1);
@@ -141,11 +137,11 @@ read                            return yy::parser::token::READ;
                                   exit(-1);
                                 }
 
- /*TODO Con ayuda de una condición, podemos protegernos de un overflow*/
+ /*IMPROVEMENT Con ayuda de una condición, podemos protegernos de un overflow*/
 {unrecognized}+                 lexical_log << "Unrecognized symbols " << yytext << "\n";
 
 
 %%
 
-//TODO It would be nice to have a function to debug the parser
+//IMPROVEMENT It would be nice to have a function to debug the parser
 

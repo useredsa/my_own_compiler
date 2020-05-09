@@ -14,9 +14,7 @@ namespace ast {
 
 Type::Type(identifiers::Id* id)
         : id_(id) {
-    if (!id->RegisterAsType(this)) {
-        //TODO?
-    }
+    id->RegisterAsType(this);
 }
 
 vector<Var*> program_vars;
@@ -30,24 +28,6 @@ Var::Var(identifiers::Id* id, RType rtype, Exp val, bool is_constant)
 Var::Var(identifiers::Id* id, RType rtype)
         : Var(id, rtype, new ast::NoExp) {  }
 
-// void Dcls::AddConstants(const std::vector<std::pair<Id*, IntLit*>>&  cons) {
-//     for (auto [id, val] : cons) {
-//         if (!id->RegisterAsConstant(val)) {
-//             //TODO semantic_log << "ERROR..."
-//         }
-//         constants.push_back(id);
-//     }
-// }
-
-// void Dcls::AddIdentifiers(const std::vector<Id*>& ids, Id* type) {
-//     for (Id* id : ids) {
-//         if (!id->RegisterAsVariable(type)) {
-//             semantic_log << "ERROR: identifier " <<  id->name() << " already in use. Unavailable to define as a variable\n";
-//         }
-//         variables.push_back(id);
-//     }
-// }
-
 Fun::Fun(identifiers::Id* id,
          RType rtype,
          vector<Var*>&& args,
@@ -58,9 +38,9 @@ Fun::Fun(identifiers::Id* id,
           args_(args),
           var_dcls_(var_dcls),
           stmts_(stmts) {
-    if (!id->RegisterFunction(this)) {
-        //TODO semantic_log << "ERROR: the function cannot be named " << name << " a variable or a function with the same signature is registered with that name\n";
-    }
+    id->RegisterFunction(this);
+    //IMPROVEMENT Errors are being print inside that function, but could be print here
+    // saying what couldn't be registered instead.
 }
 
 Prog::Prog(string&& name,
@@ -69,7 +49,9 @@ Prog::Prog(string&& name,
            vector<Stmt>&& stmts)
         : name(name),
           funs(funs) {
-    this->funs.push_back(new Fun(identifiers::GetId("main"),  //TODO Get Instead of New?
+    // The id main is already registered to prevent other functions from being called
+    // main. Therefore, the call should be GetId instead of NewId
+    this->funs.push_back(new Fun(identifiers::GetId("main"),
                                  RType(builtin::IntTypeId()),
                                  {},
                                  std::move(dcls),

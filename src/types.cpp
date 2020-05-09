@@ -181,6 +181,36 @@ class StrTypeBinPlus : public ast::Fun {
           {}) {  }
 };
 
+class IntTypeUnaMinus : public ast::Fun {
+  public:
+    static inline IntTypeUnaMinus* CreateAndRegister() {
+        identifiers::Id* id = identifiers::GetId(".operator-");
+        identifiers::AddNameScope();
+        auto* ptr = new IntTypeUnaMinus(id);
+        identifiers::AbandonCurrentNameScope();
+        return ptr;
+    }
+    
+    virtual string llvm_put_call(std::ostream& os,
+                                 int& local_var_count,
+                                 const std::vector<llvm::ComputedExp*>& params) override {
+        assert(params.size() == 1);
+        string ref = "%" + std::to_string(local_var_count++);
+        os << "\t" << ref << " = sub nsw i32 0, " << params[0]->val << "\n";
+        return ref;
+    }
+
+  private:
+    IntTypeUnaMinus(identifiers::Id* id)
+        : Fun(id,
+              ast::RType(IntTypeId()),
+              {
+                  new ast::Var(identifiers::NewId(".op"), ast::RType(IntTypeId())),
+              },
+              {},
+              {}) {  }
+};
+
 void RegisterTypes() {
     new IntType(identifiers::NewId("int"));
     new StrType(identifiers::NewId("str"));
@@ -188,6 +218,7 @@ void RegisterTypes() {
     IntTypeBinMinus::CreateAndRegister();
     IntTypeBinSlash::CreateAndRegister();
     IntTypeBinAsterisk::CreateAndRegister();
+    IntTypeUnaMinus::CreateAndRegister();
     StrTypeBinPlus::CreateAndRegister();
 }
 

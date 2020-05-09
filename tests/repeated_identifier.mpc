@@ -20,7 +20,7 @@ begin
     write(name2)
 end;
 
-function double_argument(const a, a : int) : int
+function double_argument(const a: int, const a : int) : int
 begin
     write(a)
 end;

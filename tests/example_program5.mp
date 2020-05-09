@@ -81,7 +81,7 @@ var upTo : int;
 
 begin
 	read(upTo);
-	upTo := fib_drawing(upTo)
+	upTo := -fib_drawing(upTo)
 end.
 
 

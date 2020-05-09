@@ -45,7 +45,7 @@ struct WhileStmt {
 };
 
 struct ForStmt {
-    RVar rvar;  //TODO Implement scoping?
+    RVar rvar;
     Exp start_exp;
     Exp end_exp;
     Stmt stmt;

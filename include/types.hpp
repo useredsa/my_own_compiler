@@ -21,7 +21,7 @@ inline identifiers::Id* IntTypeId() {
     return ptr;
 }
 
-class IntType : public ast::Type { //TODO transform to singleton?
+class IntType : public ast::Type {
   public:
     IntType(identifiers::Id* id) : Type(id) {}
 
