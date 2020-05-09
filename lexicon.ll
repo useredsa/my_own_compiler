@@ -137,7 +137,7 @@ read                            return yy::parser::token::READ;
                                   exit(-1);
                                 }
 
- /*IMPROVEMENT Con ayuda de una condición, podemos protegernos de un overflow*/
+ /*IMPROVEMENT With the help of a condition, we could protect ourselves from an overflow */
 {unrecognized}+                 lexical_log << "Unrecognized symbols " << yytext << "\n";
 
 

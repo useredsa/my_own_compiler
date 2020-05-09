@@ -19,14 +19,14 @@ Type::Type(identifiers::Id* id)
 
 vector<Var*> program_vars;
 
-Var::Var(identifiers::Id* id, RType rtype, Exp val, bool is_constant)
+Var::Var(identifiers::Id* id, RType rtype, const Exp& val, bool is_constant)
         : id_(id), rtype_(rtype), val_(val), is_constant_(is_constant) {
     id_->RegisterAsVariable(this);
     program_vars.push_back(this);
 }
 
 Var::Var(identifiers::Id* id, RType rtype)
-        : Var(id, rtype, new ast::NoExp) {  }
+        : Var(id, rtype, new ast::NoExp()) {  }
 
 Fun::Fun(identifiers::Id* id,
          RType rtype,

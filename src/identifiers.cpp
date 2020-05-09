@@ -9,7 +9,6 @@ namespace identifiers {
 
 using std::vector;
 using std::string;
-using std::pair;
 using ast::Type;
 using ast::Var;
 using ast::Fun;
@@ -91,10 +90,11 @@ void AbandonCurrentNameScope() {
     }
 }
 
-Id* pop_unactive(NameInfo& info) {
+Id* pop_unactive(NameInfo* info) {
+    assert(info != nullptr);
     size_t last_acronological = acronological_scopes.back();
-    while (not info.active_declarations.empty()) {
-        auto [pos, id] = info.active_declarations.top();
+    while (not info->active_declarations.empty()) {
+        auto [pos, id] = info->active_declarations.top();
         // If the last declaration of a variable is still active
         if (pos < active_scopes.size() and id->namescope() == active_scopes[pos]) {
             // check if belongs to a name scope under the
@@ -104,7 +104,7 @@ Id* pop_unactive(NameInfo& info) {
             }
             break;
         }
-        info.active_declarations.pop();
+        info->active_declarations.pop();
     }
     return nullptr;
 }
@@ -122,7 +122,7 @@ Id* NewId(string&& name, NameScope* scope, size_t scope_pos) {
 
 Id* NewId(string&& name) {
     NameInfo& info = name_table[name];
-    if (Id* ptr = pop_unactive(info); ptr and
+    if (Id* ptr = pop_unactive(&info); ptr and
         ptr->namescope() == active_scopes.back()) {
         return ptr;
     }
@@ -131,7 +131,7 @@ Id* NewId(string&& name) {
 
 Id* GetId(string&& name) {
     NameInfo& info = name_table[name];
-    if (Id* ptr = pop_unactive(info); ptr) {
+    if (Id* ptr = pop_unactive(&info); ptr) {
         return ptr;
     }
     size_t last_acronological = acronological_scopes.back();

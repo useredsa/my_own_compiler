@@ -15,13 +15,13 @@ namespace identifiers {
 
 class ImaginaryErrorType : public ast::Type {
   public:
-    ImaginaryErrorType(identifiers::Id* id) : Type(id) {}
+    explicit ImaginaryErrorType(identifiers::Id* id) : Type(id) {}
 
-    virtual inline std::string llvm_name() override {
+    inline std::string llvm_name() override {
         return ".error_type";
     }
 
-    virtual inline int def_alignment() override {
+    inline int def_alignment() override {
         return 0;
     }
 };
@@ -107,8 +107,9 @@ void NameResolution::SecondPass() {
                         }
                     }
                     ast::RType& rtype = id->ref.funs[i]->rtype();
-                    if (rtype.id->abstracts_ == kRedirected)
+                    if (rtype.id->abstracts_ == kRedirected) {
                         rtype.id = rtype.id->ref.id;
+                    }
                     if (not rtype.id->IsAType()) {
                         semantic_log << "Return type " << rtype.id->name()
                                      << " is not a type!\n";
@@ -152,8 +153,9 @@ ast::Fun* NameResolution::FromFunSig(Id* id, const std::vector<ast::Type*>& sign
         while (index > 0 and info.ids[index]->scope_ != id->scope_->parent_) {
             --index;
         }
-        if (info.ids[index]->scope_ != id->scope_->parent_)
+        if (info.ids[index]->scope_ != id->scope_->parent_) {
             break;
+        }
     }
     return ErrorFun();
 }
@@ -190,6 +192,7 @@ void NameResolution::operator()(ast::Stmt& stmt) {
     std::visit(*this, stmt);
 }
 
+//NOLINTNEXTLINE(misc-unused-parameters): parameter is necessary variant visitor.
 void NameResolution::operator()(ast::EmptyStmt* empty) {
 }
 
@@ -202,48 +205,54 @@ void NameResolution::operator()(ast::CompStmt* stmts) {
 void NameResolution::operator()(ast::Assig* assig) {
     ast::Type* lhs_type = GetType(assig->rvar);
     ast::Type* rhs_type = GetType(assig->exp);
-    if (lhs_type != rhs_type)
+    if (lhs_type != rhs_type) {
         semantic_log << "Cannot convert " << rhs_type->id()->name()
                      << " to " << lhs_type->id()->name() << " in assignment\n";
-    if (assig->rvar.var->is_constant())
+    }
+    if (assig->rvar.var->is_constant()) {
         semantic_log << "Cannot assign to const variable "
                      << assig->rvar.var->id()->name() << "\n";
+    }
 }
 
 void NameResolution::operator()(ast::IfStmt* if_stmt) {
     ast::Type* cond_type = GetType(if_stmt->exp);
-    if (cond_type != builtin::IntTypeId()->ref.type)
+    if (cond_type != builtin::IntTypeId()->ref.type) {
         semantic_log << "Incompatible type in if condition: expected "
                      << builtin::IntTypeId()->name() << '\n';
-
+    }
     (*this)(if_stmt->stmt);
     (*this)(if_stmt->alt_stmt);
 }
 
 void NameResolution::operator()(ast::WhileStmt* while_stmt) {
     ast::Type* cond_type = GetType(while_stmt->exp);
-    if (cond_type != builtin::IntTypeId()->ref.type)
+    if (cond_type != builtin::IntTypeId()->ref.type) {
         semantic_log << "Incompatible type in while condition: expected "
                      << builtin::IntTypeId()->name() << '\n';
+    }
 
     (*this)(while_stmt->stmt);
 }
 
 void NameResolution::operator()(ast::ForStmt* for_stmt) {
     ast::Type* ctrl_type = GetType(for_stmt->rvar);
-    if (ctrl_type != builtin::IntTypeId()->ref.type)
+    if (ctrl_type != builtin::IntTypeId()->ref.type) {
         semantic_log << "Incompatible type in for control variable: expected "
                      << builtin::IntTypeId()->name() << '\n';
+    }
 
     ast::Type* init_type = GetType(for_stmt->start_exp);
-    if (init_type != builtin::IntTypeId()->ref.type)
+    if (init_type != builtin::IntTypeId()->ref.type) {
         semantic_log << "Incompatible type in for initial expression: expected "
                      << builtin::IntTypeId()->name() << '\n';
+    }
 
     ast::Type* final_type = GetType(for_stmt->end_exp);
-    if (final_type != builtin::IntTypeId()->ref.type)
+    if (final_type != builtin::IntTypeId()->ref.type) {
         semantic_log << "Incompatible type in for final expression: expected "
                      << builtin::IntTypeId()->name() << '\n';
+    }
 
     (*this)(for_stmt->stmt);
 }
@@ -253,11 +262,12 @@ void NameResolution::operator()(ast::ReadStmt* read_stmt) {
     for (ast::RVar& rvar : read_stmt->rvars) {
         type = GetType(rvar);
         if (type != builtin::IntTypeId()->ref.type and
-            type != builtin::StrTypeId()->ref.type)
+            type != builtin::StrTypeId()->ref.type) {
             semantic_log << "Incompatible type in read statement: "
                          << " unexpected " << type->id()->name()
                          << " expected " << builtin::IntTypeId()->name()
                          << " or " << builtin::StrTypeId()->name() << '\n';
+        }
     }
 }
 
@@ -266,11 +276,12 @@ void NameResolution::operator()(ast::WriteStmt* write_stmt) {
     for (ast::Exp& exp : write_stmt->exps) {
         type = GetType(exp);
         if (type != builtin::IntTypeId()->ref.type and
-            type != builtin::StrTypeId()->ref.type)
+            type != builtin::StrTypeId()->ref.type) {
             semantic_log << "Incompatible type in write statement:"
                          << " unexpected " << type->id()->name()
                          << " expected " << builtin::IntTypeId()->name()
                          << " or " << builtin::StrTypeId()->name() << '\n';
+        }
     }
 }
 
@@ -282,14 +293,17 @@ ast::Type* NameResolution::GetType(ast::RVar& rvar) {
     return (*this)(rvar);
 }
 
+//NOLINTNEXTLINE(misc-unused-parameters): parameter is necessary variant visitor.
 ast::Type* NameResolution::operator()(ast::NoExp* no_exp) {
     return ErrorType();
 }
 
+//NOLINTNEXTLINE(misc-unused-parameters): parameter is necessary variant visitor.
 ast::Type* NameResolution::operator()(ast::IntLit* int_lit) {
     return builtin::IntTypeId()->ref.type;
 }
 
+//NOLINTNEXTLINE(misc-unused-parameters): parameter is necessary variant visitor.
 ast::Type* NameResolution::operator()(ast::StrLit* str_lit) {
     return builtin::StrTypeId()->ref.type;
 }
@@ -310,8 +324,9 @@ ast::Type* NameResolution::operator()(ast::FunCall* call) {
 }
 
 ast::Type* NameResolution::operator()(ast::RVar& rvar) {
-    if (rvar.id->abstracts_ == kRedirected)
+    if (rvar.id->abstracts_ == kRedirected) {
         rvar.id = rvar.id->ref.id;
+    }
 
     if (not rvar.id->IsAVariable()) {
         semantic_log << rvar.id->name() << " is not a variable!\n";

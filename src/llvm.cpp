@@ -7,10 +7,7 @@ namespace compiler {
 
 using std::vector;
 using std::string;
-using identifiers::Id;
-using ast::RType;
 using ast::RVar;
-using ast::RFun;
 using ast::Prog;
 using ast::Type;
 using ast::Var;
@@ -105,8 +102,8 @@ void Translator::Output(Fun* fun) {
     os << ") {\n";
 
     // Allocate the space for the function arguments, ...
-    for (size_t i = 0; i < args.size(); ++i) {
-        EasyAlloca(args[i]);
+    for (Var* var : args) {
+        EasyAlloca(var);
     }
     // ...variables, and...
     for (Var* var : fun->var_dcls()) {
@@ -281,6 +278,7 @@ void Translator::operator()(WriteStmt* write_stmt) {
  * NoExp is when you want to represent the absence of expression.
  * It shall not be evaluated!
  */
+//NOLINTNEXTLINE(misc-unused-parameters): parameter is necessary variant visitor.
 inline ComputedExp Translator::operator()(NoExp* no_exp) {
     assert(false);
 }

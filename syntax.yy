@@ -5,8 +5,9 @@
 %define api.value.type variant     // Use Bison's type-safe variant instead of a C union
                                    // for storing the data of rules. It also allows to 
                                    // use user-defined classes.
-%define api.token.constructor      //TODO
-
+%define api.token.constructor      // Purpose: When variant-based semantic values are enabled,
+                                   // request that symbols be handled as a whole (type, value,
+                                   // and possibly location) in the scanner.
 
 %code top {
     /* Location(s): Near the top of the parser implementation file. It shouldn't

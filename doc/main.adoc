@@ -1,5 +1,7 @@
 = Compiler Design and Implementation
 Emilio Domínguez_Sánchez <emilio.dominugezs@um.es>; Rubén Gaspar_Marco <ruben.gasparm@um.es>
+v1.0, May 17, 2020:
+:revremark: As presented to our teacher Eduardo Martínez Gracia
 :toc:
 //TODO incluir a Eduardo como profesor
 
@@ -21,7 +23,6 @@ But it was greatly simplified in comparison to Pascal.
 
 * Restricted to a single type: integer values
 * Absent of relational operators
-* Absent of a return statement
 
 We decided we wanted to focus on this project and implement a language with more features
 
@@ -44,4 +45,57 @@ _"`If we were to implement this feature from language X,
 would it be easy with the code as is right now?`"_.
 This document serves the purpose of describing our work and
 our view on the code structure of a compiler.
+
+
+== Compiler Features Overview
+
+=== Rationale of the feautres supported
+
+
+== Tools and Framework
+// Flex, Bison, C++, AsciiDoctor, clang-tidy
+
+
+== Compiler Parts
+
+=== Abstraction
+// Abstracción de los conceptos de variable, tipo, etc.
+// Más en el fichero que ronda por esta carpeta.
+
+
+== Our language grammar and semantics
+// Gramática original, nuestra gramática actual
+
+
+== Implementation I
+
+=== Variants or Inheritance. The visitor pattern.
+// std::variant y std::visit.
+// Mezcla de variants y herencia
+
+=== Expressions
+// Lista de expressions
+
+=== Statements
+// Lista de statements
+
+
+== Implementation II
+
+=== Name Resolution
+// Tipos de namespaces
+// RVar, RFun, RType
+
+=== Semantic Checks
+
+=== Type Handling
+// Chequeo de tipos y demás. Creación de tipos de usuario
+
+=== Code Generation
+
+
+== Conclusions
+
+=== How to continue the project
+// Lista de ideas de cómo se puede mejorar
 

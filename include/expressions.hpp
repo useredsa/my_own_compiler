@@ -83,7 +83,7 @@ struct UnaOp {
     RFun rfun;
     Exp exp;
 
-    explicit UnaOp(Exp exp)
+    explicit UnaOp(const Exp& exp)
         : rfun(identifiers::GetId(std::string(".operator") + static_cast<char>(op))),
           exp(exp) {  };
 };
@@ -97,7 +97,7 @@ struct BinOp {
     Exp lhs;
     Exp rhs;
 
-    BinOp(Exp lhs, Exp rhs)
+    BinOp(const Exp& lhs, const Exp& rhs)
         : rfun(identifiers::GetId(std::string(".operator") + static_cast<char>(op))),
           lhs(lhs),
           rhs(rhs) {  };

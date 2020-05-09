@@ -45,7 +45,7 @@ class Type {
 class Var {
   public:
     Var(identifiers::Id* id, RType rtype);
-    Var(identifiers::Id* id, RType rtype, Exp val, bool is_constant = false);
+    Var(identifiers::Id* id, RType rtype, const Exp& val, bool is_constant = false);
 
     inline identifiers::Id* id() const {
         return id_;

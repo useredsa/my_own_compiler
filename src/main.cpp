@@ -56,6 +56,7 @@ int options(int argc, char* argv[]) {
         std::cerr << "mpc: Must input exactly one file\n";
         exit(-1);
     }
+    //NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic): necessary
     INPUT_FILE = argv[optind];
 
     if (custom_output == false) {
@@ -73,6 +74,7 @@ int options(int argc, char* argv[]) {
 
 int main(int argc, char* argv[]) {
     options(argc, argv);
+    //IMPROVEMENT open in a ifstream and pass it to a program class.
     freopen(INPUT_FILE.c_str(), "r", stdin);
 
     // Initialization needed

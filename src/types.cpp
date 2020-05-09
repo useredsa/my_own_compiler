@@ -17,9 +17,9 @@ class IntTypeBinPlus : public ast::Fun {
         return ptr;
     }
     
-    virtual string llvm_put_call(std::ostream& os,
-                                 int& local_var_count,
-                                 const std::vector<llvm::ComputedExp*>& params) override {
+    string llvm_put_call(std::ostream& os,
+                         int& local_var_count,
+                         const std::vector<llvm::ComputedExp*>& params) override {
         assert(params.size() == 2);
         string ref = "%" + std::to_string(local_var_count++);
         os << "\t" << ref << " = add nsw i32 " << params[0]->val << ", " 
@@ -28,7 +28,7 @@ class IntTypeBinPlus : public ast::Fun {
     }
 
   private:
-    IntTypeBinPlus(identifiers::Id* id)
+    explicit IntTypeBinPlus(identifiers::Id* id)
         : Fun(id,
               ast::RType(IntTypeId()),
               {
@@ -49,9 +49,9 @@ class IntTypeBinMinus : public ast::Fun {
         return ptr;
     }
     
-    virtual string llvm_put_call(std::ostream& os,
-                                 int& local_var_count,
-                                 const std::vector<llvm::ComputedExp*>& params) override {
+    string llvm_put_call(std::ostream& os,
+                         int& local_var_count,
+                         const std::vector<llvm::ComputedExp*>& params) override {
         assert(params.size() == 2);
         string ref = "%" + std::to_string(local_var_count++);
         os << "\t" << ref << " = sub nsw i32 " << params[0]->val << ", " 
@@ -60,7 +60,7 @@ class IntTypeBinMinus : public ast::Fun {
     }
 
   private:
-    IntTypeBinMinus(identifiers::Id* id)
+    explicit IntTypeBinMinus(identifiers::Id* id)
         : Fun(id,
               ast::RType(IntTypeId()),
               {
@@ -81,9 +81,9 @@ class IntTypeBinAsterisk : public ast::Fun {
         return ptr;
     }
     
-    virtual string llvm_put_call(std::ostream& os,
-                                 int& local_var_count,
-                                 const std::vector<llvm::ComputedExp*>& params) override {
+    string llvm_put_call(std::ostream& os,
+                         int& local_var_count,
+                         const std::vector<llvm::ComputedExp*>& params) override {
         assert(params.size() == 2);
         string ref = "%" + std::to_string(local_var_count++);
         os << "\t" << ref << " = mul nsw i32 " << params[0]->val << ", " 
@@ -113,9 +113,9 @@ class IntTypeBinSlash : public ast::Fun {
         return ptr;
     }
     
-    virtual string llvm_put_call(std::ostream& os,
-                                 int& local_var_count,
-                                 const std::vector<llvm::ComputedExp*>& params) override {
+    string llvm_put_call(std::ostream& os,
+                         int& local_var_count,
+                         const std::vector<llvm::ComputedExp*>& params) override {
         assert(params.size() == 2);
         string ref = "%" + std::to_string(local_var_count++);
         os << "\t" << ref << " = sdiv i32 " << params[0]->val << ", " 
@@ -124,7 +124,7 @@ class IntTypeBinSlash : public ast::Fun {
     }
 
   private:
-    IntTypeBinSlash(identifiers::Id* id)
+    explicit IntTypeBinSlash(identifiers::Id* id)
         : Fun(id,
               ast::RType(IntTypeId()),
               {
@@ -145,9 +145,9 @@ class StrTypeBinPlus : public ast::Fun {
         return ptr;
     }
     
-    virtual string llvm_put_call(std::ostream& os,
-                                 int& local_var_count,
-                                 const std::vector<llvm::ComputedExp*>& params) override {
+    string llvm_put_call(std::ostream& os,
+                         int& local_var_count,
+                         const std::vector<llvm::ComputedExp*>& params) override {
         assert(params.size() == 2);
         string len1 = "%" + std::to_string(local_var_count++);
         string len2 = "%" + std::to_string(local_var_count++);
@@ -170,7 +170,7 @@ class StrTypeBinPlus : public ast::Fun {
         return ref;
     }
   private:
-    StrTypeBinPlus(identifiers::Id* id)
+    explicit StrTypeBinPlus(identifiers::Id* id)
         : Fun(id,
           ast::RType(StrTypeId()),
           { 
@@ -191,9 +191,9 @@ class IntTypeUnaMinus : public ast::Fun {
         return ptr;
     }
     
-    virtual string llvm_put_call(std::ostream& os,
-                                 int& local_var_count,
-                                 const std::vector<llvm::ComputedExp*>& params) override {
+    string llvm_put_call(std::ostream& os,
+                         int& local_var_count,
+                         const std::vector<llvm::ComputedExp*>& params) override {
         assert(params.size() == 1);
         string ref = "%" + std::to_string(local_var_count++);
         os << "\t" << ref << " = sub nsw i32 0, " << params[0]->val << "\n";
@@ -201,7 +201,7 @@ class IntTypeUnaMinus : public ast::Fun {
     }
 
   private:
-    IntTypeUnaMinus(identifiers::Id* id)
+    explicit IntTypeUnaMinus(identifiers::Id* id)
         : Fun(id,
               ast::RType(IntTypeId()),
               {
