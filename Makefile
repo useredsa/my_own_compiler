@@ -85,8 +85,8 @@ tidy:
 		clang-tidy $$src -format-style=google -checks={bugprone-*,cert-*,clang-analyzer-*,cppcoreguidelines-*,google-*,misc-*,modernize-*,performance-*,portability-*,readibility-*} -- $(CXXFLAGS) $(INC) ; \
 	done
 
-run: $(TARGET) tests/example_program5.mp
-	./$(TARGET) < tests/example_program5.mp
+run: $(TARGET)
+	./$(TARGET) $(FILE) -o bin/a.llvm
 	cat bin/a.llvm
 	llvm-as < $(BIND)/a.llvm > $(BIND)/a.bc
 	clang $(BIND)/a.bc -o $(BIND)/a.out
