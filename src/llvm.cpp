@@ -63,6 +63,10 @@ inline void Translator::EasyStore(const string& val, Var* var) {
        << var->rtype().ty->def_alignment() << "\n";
 }
 
+inline void PutUselessOp(std::ostream& os, int& local_var_count) {
+    os << "\t%" << local_var_count++ << " = add nsw i32 0, 0 ; inserted-but-not-used\n";
+}
+
 void Translator::Output(Prog* prog) {
     // Include C stdin library
     os << "; ModuleID = '<stdin>'\n";
@@ -85,14 +89,15 @@ void Translator::Output(Prog* prog) {
     // C stdin library used functions
     os << "declare i32 @__isoc99_scanf(i8*, ...)\n";
     os << "declare i32 @printf(i8*, ...)\n";
+    os << "declare noalias i8* @malloc(i64)\n";
     os << "declare i64 @strlen(i8*)\n";
     os << "declare i8* @strcpy(i8*, i8*)\n";
 }
 
 void Translator::Output(Fun* fun) {
     //TODO fun->dcls()->llvm_put_constants(os);
-    os << "; Fun\n";
-    os << "define " << fun->rtype().ty->llvm_name() << " @" << fun->id()->name() << "(";
+    os << "; Function\n";
+    os << "define " << fun->rtype().ty->llvm_name() << " @" << fun->llvm_name() << "(";
     const std::vector<Var*>& args = fun->args();
     for (size_t i = 0; i < args.size(); ++i) {
         if (i) os << ", ";
@@ -108,9 +113,15 @@ void Translator::Output(Fun* fun) {
     for (Var* var : fun->var_dcls()) {
         EasyAlloca(var);
     }
-    // ...store in the value for the arguments.
+    // ...store in the value
     for (size_t i = 0; i < args.size(); ++i) {
-        EasyStore(LocVar(i+1), args[i]);
+        EasyStore(LocVar(i), args[i]);
+    }
+    for (Var* var : fun->var_dcls()) {
+        if (!std::holds_alternative<NoExp*>(var->val())) {
+            ComputedExp exp = Eval(var->val());
+            EasyStore(exp.val, var);
+        }
     }
 
     // The local variables counter starts at %1 for empty functions,
@@ -119,15 +130,26 @@ void Translator::Output(Fun* fun) {
     for (const Stmt& stmt : fun->stmts()) {
         Output(stmt);
     }
-    os << "\tret i32 0\n"; //TODO return type!
+
+
+    const string& tyname = fun->rtype().ty->llvm_name();
+    Var* var = fun->var_dcls().back();
+    os << "\t%" << local_var_count++ << " = load " << tyname << ", " << tyname << "* %"
+       << var->id()->name() << ", align " << fun->rtype().ty->def_alignment() << "\n";
+    if (var->rtype().ty == StrTypeId()->type()) {
+        string len = "%" + std::to_string(local_var_count++);
+        os << "\t" << len << " = call i64 @strlen(i8* %" << local_var_count-2 << ")\n";
+        os << "\t%" << local_var_count++ << " = add nsw i64 " << len << ", 1\n";
+        string ref = "%" + std::to_string(local_var_count++);
+        os << "\t" << ref << " = call noalias i8* @malloc(i64 %" << local_var_count-2
+           << ")\n";
+        os << "\t%" << local_var_count << " = call i8* @strcpy(i8* " << ref << ", i8* %"
+           << local_var_count-4 << ")\n";
+        local_var_count++;
+    }
+    os << "\tret " << tyname << " %" << local_var_count-1 << "\n";
     os << "}\n\n";
 }
-
-// void Translator::AllocaVariables(Dcls* dcls) {
-//     for (Id* id : dcls->variables) {
-//         EasyAlloca(id->name(), id->var()->type->type()); //TODO este tipo de indirecciones...
-//     }
-// }
 
 inline void Translator::Output(Stmt stmt) {
     std::visit(*this, stmt);
@@ -165,13 +187,13 @@ void Translator::operator()(IfStmt* if_stmt) {
        << label_num << "\n";
     os << "then" << label_num << ":\n";
     Output(if_stmt->stmt);
+    os << "\tbr label %fi" << label_num << "\n";  
     if (!std::holds_alternative<EmptyStmt*>(if_stmt->alt_stmt)) {
-        os << "\tbr label %fi" << label_num << "\n";  
         os << "else" << label_num << ":\n";
         Output(if_stmt->alt_stmt);
         os << "\tbr label %fi" << label_num << "\n";
     }
-    os << "fi" << label_num << ":\n";
+    os << "fi" << label_num<< ":\n";
 }
 
 void Translator::operator()(WhileStmt* while_stmt) {
@@ -191,16 +213,15 @@ void Translator::operator()(WhileStmt* while_stmt) {
 
 void Translator::operator()(ForStmt* for_stmt) {
     int label_num = local_var_count;
-    // control_id = begin  //TODO Lástima no aprovechar el contenido de assignment
     ComputedExp start_exp = Eval(for_stmt->start_exp);
     EasyStore(start_exp.val, for_stmt->rvar.var);
     os << "\tbr label %forcomp" << label_num << "\n";
 
     Exp aux_id_exp = for_stmt->rvar;
-    // Loop until control_id == end
-    ComputedExp end_exp = Eval(for_stmt->end_exp);
+    // Loop until id == end
     os << "forcomp" << label_num << ":\n";
     ComputedExp ctrl_id_exp = Eval(aux_id_exp);
+    ComputedExp end_exp = Eval(for_stmt->end_exp);
     os << "\t%" << local_var_count << " = icmp ne " << IntTypeId()->type()->llvm_name()
        << " " << ctrl_id_exp.val << ", " << end_exp.val << "\n";
     os << "\tbr i1 %" << local_var_count++ << ", label %forloop" << label_num
@@ -209,9 +230,9 @@ void Translator::operator()(ForStmt* for_stmt) {
     os << "forloop" << label_num << ":\n";
     Output(for_stmt->stmt);
 
-    // increment control_id
+    // increment id
     os << "\t%" << local_var_count << " = add nsw i32 " << ctrl_id_exp.val << ", 1\n";
-    EasyStore(LocVar(local_var_count), for_stmt->rvar.var);
+    EasyStore(LocVar(local_var_count++), for_stmt->rvar.var);
     os << "\tbr label %forcomp" << label_num << "\n";
     os << "afterfor" << label_num << ":\n";
 }
@@ -225,8 +246,9 @@ void Translator::operator()(ReadStmt* read_stmt) {
         } else if (rvar.var->rtype().ty == StrTypeId()->type()) {
             os << "@.io.str";
         } else {
-            //TODO imprimir error read no soporta cosas que no sean builtin -> a otro sitio
-            //DONE
+            internal_log << "Unexpected type in ReadStmt during llvm translation!"
+                         << std::endl;
+            exit(-1);
         }
         os << ", i32 0, i32 0), " << rvar.var->rtype().ty->llvm_name() << "* %"
            << rvar.var->id()->name() << ")\n";
@@ -243,8 +265,9 @@ void Translator::operator()(WriteStmt* write_stmt) {
         } else if (eval.type == StrTypeId()->type()) {
             os << "@.io.str";
         } else {
-            //TODO imprimir error write no soporta cosas que no sean builtin
-            //DONE
+            internal_log << "Unexpected type in ReadStmt during llvm translation!"
+                         << std::endl;
+            exit(-1);
         }
         os << ", i32 0, i32 0), " << eval.type->llvm_name() << " " << eval.val << ")\n";
     }
@@ -300,54 +323,56 @@ ComputedExp Translator::operator()(BinOp<op>* bin_op) {
     //TODO resolver las funciones en una pasada
     ComputedExp lhs_exp = Eval(bin_op->lhs);
     ComputedExp rhs_exp = Eval(bin_op->rhs);
-    // Fun* func = identifiers::GetId("operator" + (char) op)->
-    //                      can_be_called({lhs->exp_type(), rhs->exp_type()});
-    // assert(func != nullptr);
-    // return func->type(); //TODO
-    // Fun* func = identifiers::GetId("operator+")->
-    //                      can_be_called({lhs->exp_type(), rhs->exp_type()});
-    // return func->llvm_put_call(os, local_var_count, {&lhs_str, &rhs_str});
-    return {IntTypeId()->type(), "%-2"};
+    string ref = bin_op->rfun.fun->
+                   llvm_put_call(os, local_var_count, {&lhs_exp, &rhs_exp});
+    return {bin_op->rfun.fun->rtype().ty, ref};
 }
 
-ComputedExp Translator::operator()(FunCall* func_call) {
-    //TODO las funciones no se pueden resolver con el Id porque eso apunta al mayor namespace
-    // que contiene esa función pero puede haber otros debajo con el mismo nombre de función
-    // y otros atributos :/. Además hay que hacer la resolución antes.
-    // vector<Id*> signature(func_call->args->size());
-    // vector<ComputedExp> exps(func_call->args->size());
-    // for (size_t i = 0; i < func_call->args->size(); ++i) {
-    //     exps[i] = Eval(fun_call->args[i]);
-    //     signature[i] = args[i]->exp_type();
-    // }
-    // Fun* func = id->can_be_called(signature);
-    // assert(func != nullptr);
-    // if (func == nullptr) {
-    //     //TODO error
-    // } 
-
-    // string ref = LocVar(local_var_count++);
-    // os << "\t" << ref << " = call " << func->type()->type()->llvm_name()
-    //    << " @" << func->name() << "(";
-    // for (size_t i = 0; i < args->size(); ++i) {
-    //     if (i) os << ", ";
-    //     os << signature[i]->llvm_type_name() << " " << exp_ress[i];
-    // }
-    // os << ")\n";
-    // return {func->type()->type(), ref};
-    return {IntTypeId()->type(), "%-2"};
+ComputedExp Translator::operator()(FunCall* fun_call) {
+    ComputedExp exps[fun_call->args.size()];
+    vector<ComputedExp*> args(fun_call->args.size());
+    for (size_t i = 0; i < fun_call->args.size(); ++i) {
+        exps[i] = Eval(fun_call->args[i]);
+        args[i] = &exps[i];
+    }
+    string ref = fun_call->rfun.fun->llvm_put_call(os, local_var_count, args);
+    return {fun_call->rfun.fun->rtype().ty, ref};
 }
-
-// string Fun::llvm_put_call(std::ostream& os,
-//                                       int& local_var_count,
-//                                       std::vector<std::string*> params) {
-//     return "TODO";
-// }
 
 inline ComputedExp Translator::Eval(Exp exp) {
     return std::visit(*this, exp);
 }
 
 } // namespace llvm
+
+namespace ast {
+
+std::string Fun::llvm_name() const {
+    if (id_->name() == ".operator+") {
+        return ".operatorPLUS";
+    } else if (id_->name() == ".operator-") {
+        return ".operatorMINUS";
+    } else if (id_->name() == ".operator*") {
+        return ".operatorASTERISK";
+    } else if (id_->name() == ".operator/") {
+        return ".operatorSLASH";
+    }
+    return id_->name();
+}
+
+std::string Fun::llvm_put_call(std::ostream& os,
+                               int& local_var_count,
+                               const vector<llvm::ComputedExp*>& params) {
+    std::string ref = llvm::LocVar(local_var_count++);
+    os << "\t" << ref << " = call " << rtype().ty->llvm_name() << " @" << llvm_name() << "(";
+    for (size_t i = 0; i < params.size(); ++i) {
+        if (i) os << ", ";
+            os << params[i]->type->llvm_name() << " " << params[i]->val;
+    }
+    os << ")\n";
+    return ref;
+}
+
+} // namespace ast
 
 } // namespace compiler

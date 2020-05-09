@@ -61,6 +61,7 @@
     // Keywords
 %token PROGRAM                                "program"
 %token FUNCTION                               "function"
+%token OPERATOR                               "operator"
 %token CONST                                  "const"
 %token VAR                                    "var"
 %token BEGINN                                 "begin"
@@ -95,6 +96,7 @@
 %type <identifiers::Id*>                      new_id
 %type <std::vector<identifiers::Id*>*>        comma_sep_dcl
 %type <identifiers::Id*>                      id_ref
+%type <identifiers::Id*>                      function_id
 %type <ast::RType>                            rtype
 %type <ast::RVar>                             rvar
 %type <ast::RFun>                             rfun
@@ -102,12 +104,14 @@
 %type <std::vector<ast::RVar>*>               comma_sep_rvar_
 %type <ast::Fun*>                             function
 %type <std::vector<ast::Fun*>*>               functions
+%type <ast::Var*>                             single_arg
+%type <std::vector<ast::Var*>*>               args
 %type <std::vector<ast::Var*>*>               declarations
+%type <std::vector<ast::Var*>*>               constants
 %type <ast::Stmt>                             statement
 %type <std::vector<ast::Stmt>*>               semcolon_sep_stmts_
 %type <std::vector<ast::Stmt>*>               compound_statement
 %type <std::vector<ast::Stmt>*>               semcolon_sep_stmts
-// %type <ast::Constants*>                       constants
 %type <ast::Exp>                              expression
 %type <std::vector<ast::Exp>*>                print_list
 %type <std::vector<ast::Exp>*>                comma_sep_exps
@@ -132,7 +136,16 @@
 %%
 
 program:
-    "program" "name"[name] "(" ")" ";" functions declarations compound_statement "." {
+    "program" "name"[name] "(" ")" ";" functions
+	{
+    	identifiers::AddNameScope(identifiers::kCronological);
+        identifiers::NewId(".main");
+	}
+    declarations compound_statement "." {
+        $declarations->push_back(new ast::Var(identifiers::GetId(".main"),
+                                              ast::RType(builtin::IntTypeId()),
+                                              ast::Exp(new ast::IntLit(0))));
+        identifiers::AbandonCurrentNameScope();
         ast_root = new ast::Prog(std::move(*$name),
                                  std::move(*$functions),
                                  std::move(*$declarations),
@@ -170,26 +183,41 @@ functions:
     ;
 
 function:
-    "function" id_ref[fun_name]
+    "function" function_id[fun_id]
     {
         identifiers::AddNameScope(identifiers::kCronological);
-    }
-    "(" "const" comma_sep_dcl[args] ":" rtype[args_type] ")"
-    {
-        // Declaration of comma_sep_ids
-        for (identifiers::Id* id : *$args) {
-            new ast::Var(id, $args_type);
+        switch ($fun_id->name().back()) {
+            case static_cast<char>(ast::kPlus):
+            case static_cast<char>(ast::kBinMinus):
+            case static_cast<char>(ast::kAsterisk):
+            case static_cast<char>(ast::kSlash):
+                identifiers::NewId("op");
+                break;
+            default:
+                identifiers::NewId(std::string($fun_id->name()));
         }
     }
-    ":" rtype[return_type] declarations compound_statement {
-        std::vector<ast::Var*> args;
-        args.reserve($args->size());
-        for (identifiers::Id* id : *$args) {
-            args.push_back(id->var());
+    "(" args ")" ":" rtype[return_type] declarations compound_statement {
+        switch ($fun_id->name().back()) {
+            case static_cast<char>(ast::kPlus):
+            case static_cast<char>(ast::kBinMinus):
+            case static_cast<char>(ast::kAsterisk):
+            case static_cast<char>(ast::kSlash): {
+                if ($args->size() != 2)
+                    compiler::semantic_log
+                      << "Binary operator must be overloaded with exactly 2 arguments\n";
+                }
+                $declarations->push_back(new ast::Var(identifiers::GetId("op"),
+                                                      $return_type));
+                break;
+            default:
+                $declarations->push_back(new ast::Var(
+                                           identifiers::GetId(std::string($fun_id->name())),
+                                                              $return_type));
         }
-        $$ = new ast::Fun($fun_name,
+        $$ = new ast::Fun($fun_id,
                           $return_type,
-                          std::move(args),
+                          std::move(*$args),
                           std::move(*$declarations),
                           std::move(*$compound_statement));
         identifiers::AbandonCurrentNameScope();
@@ -203,6 +231,26 @@ function:
     }
     ;
 
+args:
+    args "," single_arg {
+        $$ = $1;
+        $$->push_back($3);
+    }
+    |
+    single_arg {
+        $$ = new std::vector<ast::Var*>();
+        $$->push_back($1);
+    }
+    |
+    {
+        $$ = new std::vector<ast::Var*>();
+    }
+    
+single_arg:
+    "const" new_id ":" rtype {
+        $$ = new ast::Var(ast::Var($2, $4));
+    }
+
 declarations:
     declarations "var" comma_sep_dcl[ids] ":" rtype ";" {
         $$ = $1;
@@ -213,9 +261,9 @@ declarations:
     }
     |
     declarations "const" constants ";" {
-        //TODO $$ = $1;
-        // $$->AddConstants($3);
-        // delete $3;
+        $$ = $1;
+        $$->insert($$->end(), $3->begin(), $3->end());
+        delete $3;
     }
     |
     {
@@ -415,15 +463,15 @@ expression:
     ;
 
 constants:
-    // constants "," name ":=" expression {
-    //     $$ = $1;
-    //     $$->push_back($3); //TODO asignación?
-    // }
-    // |
-    // name ":=" expression {
-    //     $$ = new t_constants();
-    //     $$->push_back($1);
-    // }
+    constants "," new_id ":=" expression {
+        $$ = $1;
+        $$->push_back(new ast::Var($3, ast::RType(builtin::IntTypeId()), $5, true));
+    }
+    |
+    new_id ":=" expression {
+        $$ = new std::vector<ast::Var*>();
+        $$->push_back(new ast::Var($1, ast::RType(builtin::IntTypeId()), $3, true));
+    }
     ;
 
 print_list:
@@ -491,6 +539,28 @@ comma_sep_dcl:
     new_id {
         $$ = new std::vector<identifiers::Id*>();
         $$->push_back($1);
+    }
+    ;
+
+function_id:
+    id_ref {
+        $$ = $1;
+    }
+    |
+    "+" "operator" {
+        $$ = identifiers::GetId(".operator+");
+    }
+    |
+    "-" "operator" {
+        $$ = identifiers::GetId(".operator-");
+    }
+    |
+    "*" "operator" {
+        $$ = identifiers::GetId(".operator*");
+    }
+    |
+    "/" "operator" {
+        $$ = identifiers::GetId(".operator/");
     }
     ;
 

@@ -8,11 +8,10 @@ begin
     write(bar)
 end;
 
-var a,i,a : int;
+var a,i : int;
 var b : str;
 
 begin
-    b := foo(a);
     read(a);
     if (a) then
     begin

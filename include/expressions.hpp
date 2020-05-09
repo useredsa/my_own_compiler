@@ -6,6 +6,7 @@
 #include <string>
 #include <variant>
 #include "ast_defs.hpp"
+#include "identifiers.hpp"
 
 namespace compiler {
 
@@ -79,9 +80,12 @@ struct FunCall {
  */
 template<UnaryOperators op>
 struct UnaOp {
+    RFun rfun;
     Exp exp;
 
-    explicit UnaOp(Exp exp) : exp(exp) {  };
+    explicit UnaOp(Exp exp)
+        : rfun(identifiers::GetId(std::string(".operator") + static_cast<char>(op))),
+          exp(exp) {  };
 };
 
 /**
@@ -89,12 +93,16 @@ struct UnaOp {
  */
 template<BinaryOperators op>
 struct BinOp {
+    RFun rfun;
     Exp lhs;
     Exp rhs;
 
     //TODO estoy suponiendo el tipo de ambos operandos es int.
     // Hay que comprobar tipos y buscar el operador apropiado.
-    BinOp(Exp lhs, Exp rhs) : lhs(lhs), rhs(rhs) {  };
+    BinOp(Exp lhs, Exp rhs)
+        : rfun(identifiers::GetId(std::string(".operator") + static_cast<char>(op))),
+          lhs(lhs),
+          rhs(rhs) {  };
 };
 
 } // namespace ast

@@ -7,6 +7,12 @@
 
 namespace compiler {
 
+namespace llvm {
+
+struct ComputedExp;
+
+} // namespace llvm
+
 namespace ast {
 
 /**
@@ -39,7 +45,7 @@ class Type {
 class Var {
   public:
     Var(identifiers::Id* id, RType rtype);
-    Var(identifiers::Id* id, RType rtype, Exp val);
+    Var(identifiers::Id* id, RType rtype, Exp val, bool is_constant = false);
 
     inline identifiers::Id* id() const {
         return id_;
@@ -53,14 +59,23 @@ class Var {
         return rtype_;
     }
 
-    inline Exp val() const {
+    inline const Exp& val() const {
         return val_;
+    }
+
+    inline Exp& val() {
+        return val_;
+    }
+
+    inline bool is_constant() const {
+        return is_constant_;
     }
 
   private:
     identifiers::Id* id_;
     RType rtype_;
     Exp val_;
+    bool is_constant_;
 };
 
 extern std::vector<Var*> program_vars;
@@ -102,20 +117,12 @@ class Fun {
     inline const std::vector<Stmt>& stmts() const {
         return stmts_;
     }
-    //TODO poner que las funciones inline sobreescriben esto para poner un inline
-    // virtual std::string llvm_put_call(std::ostream& os,
-    //                                   int& local_var_count,
-    //                                   const std::vector<std::string*>& params);
 
-    /**
-     * @brief Adds a list of constants declarations
-     */
-    // void AddConstants(const std::vector<std::pair<identifiers::Id*, IntLit*>>&  cons);
+    std::string llvm_name() const;
 
-    /**
-     * @brief Adds a list of variables declarations? //TODO Por qué identifiers?
-     */
-    // void AddIdentifiers(const std::vector<identifiers::Id*>& ids, identifiers::Id* type);
+    virtual std::string llvm_put_call(std::ostream& os,
+                                      int& local_var_count,
+                                      const std::vector<llvm::ComputedExp*>& params);
 
   private:
     identifiers::Id* id_;

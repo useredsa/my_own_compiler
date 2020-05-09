@@ -25,7 +25,8 @@ void NameResolution::FirstPass() {
 
         for (size_t i = 0; i < info.ids.size(); ++i) {
             // semantic_log << "identifier " << info.ids[i]->name()
-            //              << " from scope " << info.ids[i]->scope_ << "\n";
+            //              << " from scope " << info.ids[i]->scope_ 
+            //              << " " << (info.ids[i]->abstracts_ == kUnresolved) << "\n";
             if (info.ids[i]->abstracts_ == kUnresolved) {
                 NameScope* parent_scope = info.ids[i]->scope_->parent_;
                 for (size_t j = 0; j < i; ++j) {
@@ -36,7 +37,8 @@ void NameResolution::FirstPass() {
                     }
                 }
                 if (info.ids[i]->abstracts_ == kUnresolved) {
-                    semantic_log << "identifier " << name << " couldn't be resolved\n";
+                    semantic_log << "identifier " << name << "(" << info.ids[i]->scope_
+                                 << ") couldn't be resolved\n";
                 }
             }
         }
@@ -88,6 +90,41 @@ void NameResolution::SecondPass() {
     }
 }
 
+ast::Fun* NameResolution::FromFunSig(Id* id, const std::vector<ast::Type*>& signature) {
+    NameInfo& info = name_table[id->name()];
+    size_t index = std::find(info.ids.begin(), info.ids.end(), id) - info.ids.begin();
+    assert(index < info.ids.size());
+    while (true) {
+        if (info.ids[index]->abstracts_ == kRedirected) {
+            id = info.ids[index];
+            while (index >= 0 and info.ids[index] != id->ref.id) {
+                assert (index != 0);
+                --index;
+            }
+        }
+        id = info.ids[index];
+        if (id->abstracts_ != kFunctions) {
+            semantic_log << id->name() << " is not a function!\n";
+            break;
+        }
+        for (ast::Fun* fun : id->ref.funs) {
+            if (std::equal(fun->args().begin(), fun->args().end(),
+                           signature.begin(), signature.end(),
+                           [](ast::Var* var, ast::Type* type) {
+                               return var->rtype().ty == type;
+                           })) {
+                return fun;
+            }
+        }
+        while (index > 0 and info.ids[index]->scope_ != id->scope_->parent_) {
+            --index;
+        }
+        if (info.ids[index]->scope_ != id->scope_->parent_)
+            break;
+    }
+    return builtin::ErrorFun();
+}
+
 void NameResolution::Do() {
     FirstPass();
     SecondPass();
@@ -99,11 +136,24 @@ void NameResolution::operator()(ast::Prog* prog) {
     }
 }
 
-void NameResolution::operator()(ast::Fun* func) {
-    (*this)(func->stmts());
+void NameResolution::operator()(ast::Fun* fun) {
+    for (ast::Var* var : fun->var_dcls()) {
+        (*this)(var);
+    }
+    (*this)(fun->stmts());
 }
 
-void NameResolution::operator()(ast::Stmt stmt) {
+void NameResolution::operator()(ast::Var* var) {
+    if (not std::holds_alternative<ast::NoExp*>(var->val())) {
+        ast::Type* type = GetType(var->val());
+        if (type != var->rtype().ty) {
+            semantic_log << "Initialized constant " << var->id()->name()
+                         << " with the wrong type " << var->rtype().ty->id()->name() << "\n";
+        }
+    }
+}
+
+void NameResolution::operator()(ast::Stmt& stmt) {
     std::visit(*this, stmt);
 }
 
@@ -123,6 +173,9 @@ void NameResolution::operator()(ast::Assig* assig) {
     if (lhs_type != rhs_type and rhs_type != nullptr and lhs_type != nullptr)  //TODO 
         semantic_log << "Cannot convert " << rhs_type->id()->name()
                      << " to " << lhs_type->id()->name() << " in assignment\n";
+    if (assig->rvar.var->is_constant())
+        semantic_log << "Cannot assign to const variable "
+                     << assig->rvar.var->id()->name() << "\n";
 }
 
 void NameResolution::operator()(ast::IfStmt* if_stmt) {
@@ -165,7 +218,7 @@ void NameResolution::operator()(ast::ForStmt* for_stmt) {
 
 void NameResolution::operator()(ast::ReadStmt* read_stmt) {
     ast::Type* type;
-    for (ast::RVar rvar : read_stmt->rvars) {
+    for (ast::RVar& rvar : read_stmt->rvars) {
         type = GetType(rvar);
         if (type != builtin::IntTypeId()->ref.type and
             type != builtin::StrTypeId()->ref.type)
@@ -178,7 +231,7 @@ void NameResolution::operator()(ast::ReadStmt* read_stmt) {
 
 void NameResolution::operator()(ast::WriteStmt* write_stmt) {
     ast::Type* type;
-    for (ast::Exp exp : write_stmt->exps) {
+    for (ast::Exp& exp : write_stmt->exps) {
         type = GetType(exp);
         if (type != builtin::IntTypeId()->ref.type and
             type != builtin::StrTypeId()->ref.type and
@@ -190,8 +243,12 @@ void NameResolution::operator()(ast::WriteStmt* write_stmt) {
     }
 }
 
-ast::Type* NameResolution::GetType(ast::Exp exp) {
+ast::Type* NameResolution::GetType(ast::Exp& exp) {
     return std::visit(*this, exp);
+}
+
+ast::Type* NameResolution::GetType(ast::RVar& rvar) {
+    return (*this)(rvar);
 }
 
 ast::Type* NameResolution::operator()(ast::NoExp* no_exp) {
@@ -206,46 +263,12 @@ ast::Type* NameResolution::operator()(ast::StrLit* str_lit) {
     return builtin::StrTypeId()->ref.type;
 }
 
-ast::Fun* NameResolution::CallToFun(Id* id, const std::vector<ast::Type*>& signature) {
-    NameInfo& info = name_table[id->name()];
-    size_t index = std::find(info.ids.begin(), info.ids.end(), id) - info.ids.begin();
-    assert(index < info.ids.size());
-    while (true) {
-        if (info.ids[index]->abstracts_ == kRedirected) {
-            id = info.ids[index];
-            while (index >= 0 and info.ids[index] != id->ref.id) {
-                --index;
-            }
-            assert(index >= 0);
-        }
-        id = info.ids[index];
-        if (id->abstracts_ != kFunctions) {
-            semantic_log << id->name() << " is not a function!\n";
-            break;
-        }
-        for (ast::Fun* fun : id->ref.funs) {
-            if (std::equal(fun->args().begin(), fun->args().end(),
-                           signature.begin(), signature.end(),
-                           [](ast::Var* var, ast::Type* type) {
-                               return var->rtype().ty == type;
-                           })) {
-                return fun;
-            }
-        }
-        while (index > 0 and info.ids[index]->scope_ != id->scope_->parent_) {
-            --index;
-        }
-        if (index == 0) break;
-    }
-    return builtin::ErrorFun();
-}
-
 ast::Type* NameResolution::operator()(ast::FunCall* call) {
     std::vector<ast::Type*> args_types;
-    for (ast::Exp arg : call->args) {
+    for (ast::Exp& arg : call->args) {
         args_types.push_back(GetType(arg));
     }
-    ast::Fun* fun = CallToFun(call->rfun.id, args_types);
+    ast::Fun* fun = FromFunSig(call->rfun.id, args_types);
     if ((call->rfun.fun = fun) == builtin::ErrorFun()) {
         semantic_log << "Invalid call to function "
                      << call->rfun.id->name() << '\n';
@@ -255,8 +278,8 @@ ast::Type* NameResolution::operator()(ast::FunCall* call) {
     }
 }
 
-ast::Type* NameResolution::operator()(ast::RVar rvar) {
-    while (rvar.id->abstracts_ == kRedirected)
+ast::Type* NameResolution::operator()(ast::RVar& rvar) {
+    while (rvar.id->abstracts_ == kRedirected) //TODO esto debería ser un if porque ya está acortado
         rvar.id = rvar.id->ref.id;
 
     if (not rvar.id->IsAVariable()) {
@@ -269,26 +292,22 @@ ast::Type* NameResolution::operator()(ast::RVar rvar) {
 }
 
 template<ast::UnaryOperators op>
-ast::Type* NameResolution::operator()(const ast::UnaOp<op>* una_op) {
+ast::Type* NameResolution::operator()(ast::UnaOp<op>* una_op) {
     GetType(una_op->exp);  //TODO
     return builtin::IntTypeId()->ref.type;  //TODO
 }
 
 template<ast::BinaryOperators op>
-ast::Type* NameResolution::operator()(const ast::BinOp<op>* bin_op) {
+ast::Type* NameResolution::operator()(ast::BinOp<op>* bin_op) {
     ast::Type* lhs_type = GetType(bin_op->lhs);
     ast::Type* rhs_type = GetType(bin_op->rhs);
 
-    string operator_name = "operator";
-    operator_name += (char) op;
-    
-    ast::Fun* func = CallToFun(identifiers::GetId(std::move(operator_name)),
-                               {lhs_type, rhs_type});
-    if (func == builtin::ErrorFun()) {
-        semantic_log << "Invalid use of " << operator_name << '\n';
+    bin_op->rfun.fun = FromFunSig(bin_op->rfun.id, {lhs_type, rhs_type});
+    if (bin_op->rfun.fun == builtin::ErrorFun()) {
+        semantic_log << "Invalid use of operator " << static_cast<char>(op) << '\n';
         return nullptr;  //TODO
     } else {
-        return func->rtype().ty;
+        return bin_op->rfun.fun->rtype().ty;
     }
 }
 

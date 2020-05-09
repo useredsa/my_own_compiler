@@ -122,7 +122,8 @@ Id* NewId(string&& name, NameScope* scope, size_t scope_pos) {
 
 Id* NewId(string&& name) {
     NameInfo& info = name_table[name];
-    if (Id* ptr = pop_unactive(info); ptr) {
+    if (Id* ptr = pop_unactive(info); ptr and
+        ptr->namescope() == active_scopes.back()) {
         return ptr;
     }
     return NewId(std::move(name), active_scopes.back(), active_scopes.size()-1);

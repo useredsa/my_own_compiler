@@ -37,6 +37,7 @@ unrecognized                    [^0-9a-zA-Z()".,:;=+\-*/\\ \t\r\n]
  /* Keywords and operators */
 program                         return yy::parser::token::PROGRAM;
 function                        return yy::parser::token::FUNCTION;
+operator                        return yy::parser::token::OPERATOR;
 const                           return yy::parser::token::CONST;
 var                             return yy::parser::token::VAR;
 int                             return yy::parser::token::INT;
@@ -136,7 +137,7 @@ read                            return yy::parser::token::READ;
                                 }
 
 ({letter}|_)({letter}|{digit}|_){16,16} {
-                                  lexical_log << "Oversized identifier\n";
+                                  lexical_log << yylineno << ": Oversized identifier\n";
                                   exit(-1);
                                 }
 
