@@ -1,7 +1,6 @@
 #include "llvm.hpp"
 
 #include "statements.hpp"
-#include "types.hpp"
 
 namespace compiler {
 

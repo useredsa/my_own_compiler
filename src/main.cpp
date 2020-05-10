@@ -1,7 +1,9 @@
+#include <getopt.h>
+
 #include <iostream>
 #include <fstream>
-#include <getopt.h>
 #include <cstdio>
+
 #include "syntax.tab.hpp"
 #include "builtin.hpp"
 #include "ast-printer.hpp"

@@ -5,7 +5,8 @@
 %define api.value.type variant     // Use Bison's type-safe variant instead of a C union
                                    // for storing the data of rules. It also allows to 
                                    // use user-defined classes.
-%define api.token.constructor      //TODO
+%define api.token.constructor      // Request that symbols be handled as a whole
+                                   // (type, value, and possibly location) in the scanner.
 
 
 %code top {
@@ -21,11 +22,13 @@
      */
     #include <iostream>
     #include <string>
+    
     #include "log.hpp"
     #include "ast.hpp"
+    #include "builtin.hpp"
     #include "statements.hpp"
     #include "expressions.hpp"
-    #include "types.hpp"
+
     namespace ast         = compiler::ast;
     namespace builtin     = compiler::builtin;
     namespace identifiers = compiler::identifiers;
@@ -93,6 +96,7 @@
 %type <int>                                   "int_lit"
 %type <std::string*>                          "str_lit"
 %type <std::string*>                          "name"
+%type <std::string*>                          program_header
 %type <identifiers::Id*>                      new_id
 %type <std::vector<identifiers::Id*>*>        comma_sep_dcl
 %type <identifiers::Id*>                      id_ref
@@ -121,14 +125,18 @@
 /* Grammar Definitions */
 %start program                        // Start token
 %right "then" "else"                  // Solution to the "dangling else" problem
-                                      // Operator precedence
+// Operator precedence
 %left  "+" "-"                        // Least precedence
 %left  "*" "/"                        // to
 %right UMINUS                         // most precedence
 
-//TODO Destructors of discarded symbols
-// %destructor { } <intlit>  //TODO Include types with no destructor defined
-// %destructor { delete $$; } <*>  // Default destructor for type defined symbols
+// Destructors of discarded symbols //TODO
+// %destructor { } <int> <ast::RType> <ast::RVar>      // Types with no explicit destructor defined
+//                 <ast::RFun> <ast::Stmt> <ast::Exp>
+// %destructor { free($$); } <identifiers::Id*>        // Pointers to types with no destructor defined
+//                           <ast::Fun*>
+//                           <ast::Var*>
+// %destructor { delete $$; } <*>                      // Default destructor for type defined symbols
 
 
 
@@ -136,7 +144,7 @@
 %%
 
 program:
-    "program" "name"[name] "(" ")" ";" functions
+    program_header[name] functions
 	{
     	identifiers::AddNameScope(identifiers::kCronological);
         identifiers::NewId(".main");
@@ -157,11 +165,28 @@ program:
         if (yynerrs_) YYABORT;
     }
     |
+    // errors
     error ";" { yyerrok; } functions declarations compound_statement "." {
-        //TODO
+        ast_root = new ast::Prog(std::move(std::string(".error_program")),
+                                 std::move(*$functions),
+                                 std::move(*$declarations),
+                                 std::move(*$compound_statement));
+        delete $functions;
+        delete $declarations;
+        delete $compound_statement;
         if (yynerrs_) YYABORT;
     }
     ;
+
+program_header:
+    "program" "name"[name] "(" ")" ";" {
+        $$ = $name;
+    }
+    |
+    "program" "name"[name] "(" ")" {
+        yy::parser::error("syntax error, expecting \";\" at the end of program header");
+        $$ = $name;
+    }
 
 functions:
     functions function ";" {
@@ -174,10 +199,10 @@ functions:
     }
     |
     // errors
-    functions function { //TODO Podría ser un warning
+    functions function {
         $$ = $1;
         $$->push_back($2);
-        yy::parser::error("syntax error, expecting \";\"");
+        yy::parser::error("syntax error, expecting \";\" at the end of function definition");
         yyerrok;
     }
     ;
@@ -187,33 +212,33 @@ function:
     {
         identifiers::AddNameScope(identifiers::kCronological);
         switch ($fun_id->name().back()) {
-            case static_cast<char>(ast::kPlus):
-            case static_cast<char>(ast::kBinMinus):
-            case static_cast<char>(ast::kAsterisk):
-            case static_cast<char>(ast::kSlash):
-                identifiers::NewId("op");
-                break;
-            default:
-                identifiers::NewId(std::string($fun_id->name()));
+          case static_cast<char>(ast::kPlus):
+          case static_cast<char>(ast::kBinMinus):
+          case static_cast<char>(ast::kAsterisk):
+          case static_cast<char>(ast::kSlash):
+              identifiers::NewId("op");
+              break;
+          default:
+              identifiers::NewId(std::string($fun_id->name()));
         }
     }
     "(" args ")" ":" rtype[return_type] declarations compound_statement {
         switch ($fun_id->name().back()) {
-            case static_cast<char>(ast::kPlus):
-            case static_cast<char>(ast::kBinMinus):
-            case static_cast<char>(ast::kAsterisk):
-            case static_cast<char>(ast::kSlash): {
-                if ($args->size() != 2)
-                    compiler::semantic_log
-                      << "Binary operator must be overloaded with exactly 2 arguments\n";
-                }
-                $declarations->push_back(new ast::Var(identifiers::GetId("op"),
-                                                      $return_type));
-                break;
-            default:
-                $declarations->push_back(new ast::Var(
-                                           identifiers::GetId(std::string($fun_id->name())),
-                                                              $return_type));
+          case static_cast<char>(ast::kPlus):
+          case static_cast<char>(ast::kBinMinus):
+          case static_cast<char>(ast::kAsterisk):
+          case static_cast<char>(ast::kSlash): {
+              if ($args->size() != 2)
+                  compiler::semantic_log
+                    << "Binary operator must be overloaded with exactly 2 arguments\n";
+              }
+              $declarations->push_back(new ast::Var(identifiers::GetId("op"),
+                                                    $return_type));
+              break;
+          default:
+              $declarations->push_back(new ast::Var(
+                                         identifiers::GetId(std::string($fun_id->name())),
+                                                            $return_type));
         }
         $$ = new ast::Fun($fun_id,
                           $return_type,
@@ -226,8 +251,11 @@ function:
         delete $compound_statement;
     }
     |
+    // errors
     "function" error declarations compound_statement {
-        //TODO
+        $$ = builtin::ErrorFun();
+        delete $declarations;
+        delete $compound_statement;
     }
     ;
 
@@ -269,23 +297,43 @@ declarations:
     {
         $$ = new std::vector<ast::Var*>();
     }
-    |  // errors
+    |
+    // errors  //IMPROVEMENT Avoid discarding declarations previous to a declaration without var nor const
     declarations "var" error ";" {
+        $$ = $1;
         yyerrok;
     }
     |
     declarations "const" error ";" {
+        $$ = $1;
         yyerrok;
     }
     |
-    declarations "var" comma_sep_dcl ":" rtype {
+    declarations "var" comma_sep_dcl[ids] ":" rtype {
         yy::parser::error("syntax error, expecting \";\"");
-        yyerrok;
+        $$ = $1;
+        for (identifiers::Id* id : *$ids) {
+            $$->push_back(new ast::Var(id, $rtype));
+        }
     }
     |
     declarations "const" constants {
         yy::parser::error("syntax error, expecting \";\"");
-        yyerrok;
+        $$ = $1;
+        $$->insert($$->end(), $3->begin(), $3->end());
+        delete $3;
+    }
+    ;
+
+constants:
+    constants "," new_id ":=" expression {
+        $$ = $1;
+        $$->push_back(new ast::Var($3, ast::RType(builtin::IntTypeId()), $5, true));
+    }
+    |
+    new_id ":=" expression {
+        $$ = new std::vector<ast::Var*>();
+        $$->push_back(new ast::Var($1, ast::RType(builtin::IntTypeId()), $3, true));
     }
     ;
 
@@ -293,8 +341,10 @@ compound_statement:
     "begin" semcolon_sep_stmts "end" {
         $$ = $2;
     }
-    |  // errors
+    |  
+    // errors
     "begin" error "end" {
+        $$ = new std::vector<ast::Stmt>();  //TODO
         yyerrok;
     }
     ;
@@ -306,6 +356,12 @@ semcolon_sep_stmts:
     |
     {
         $$ = new std::vector<ast::Stmt>();  //TODO
+    }
+    |
+    // errors
+    semcolon_sep_stmts_ ";" {
+        yy::parser::error("syntax error, unexpected \";\", expecting \"end\"");
+        $$ = $1;
     }
     ;
 
@@ -321,8 +377,20 @@ semcolon_sep_stmts_:
     }
     |
     // errors
-    error ";" { yyerrok; } statement {
-        //TODO No cargarse todos los tokens anteriores al error
+    semcolon_sep_stmts_ error {
+        $$ = $1;
+    }
+    |
+    error statement {
+        $$ = new std::vector<ast::Stmt>();
+        $$->push_back($2);
+        yyerrok;
+    }
+    |
+    semcolon_sep_stmts_ statement {
+        yy::parser::error("syntax error, expecting \";\" between statements");
+        $$ = $1;
+        $$->push_back($statement);
     }
     ;
 
@@ -364,26 +432,32 @@ statement:
     }
     |
     // errors
-    "if" expression[cond] statement[stmt] {
-        $$ = new ast::EmptyStmt(); //TODO
-        yy::parser::error("syntax error, expecting \"then\"");
+    "if" expression[cond] statement[stmt]  %prec "then" {
+        yy::parser::error("syntax error, expecting \"then\" in if statement");
+        $$ = new ast::IfStmt($cond, $stmt);
+    }
+    |
+    "if" expression[cond] statement[stmt] "else" statement[alt_stmt]  %prec "else" {
+        yy::parser::error("syntax error, expecting \"then\" in if statement");
+        $$ = new ast::IfStmt($cond, $stmt, $alt_stmt);
     }
     |
     "while" expression[cond] statement[stmt] {
-        $$ = new ast::EmptyStmt(); //TODO
-        yy::parser::error("syntax error, expecting \"do\"");
+        yy::parser::error("syntax error, expecting \"do\" in while statement");
+        $$ = new ast::WhileStmt($cond, $stmt);
     }
     |
     "for" rvar[ctrl_var] ":=" error statement[stmt] {
-        $$ = new ast::EmptyStmt(); //TODO
+        $$ = $stmt;
     }
     |
     "write" "(" error ")" {
-        $$ = new ast::EmptyStmt(); //TODO
+        $$ = new ast::EmptyStmt();
+        yyerrok;
     }
     |
     "read" "(" error ")" {
-        $$ = new ast::EmptyStmt(); //TODO
+        $$ = new ast::EmptyStmt();
         yyerrok;
     }
     ;
@@ -453,24 +527,15 @@ expression:
         delete $3;
     }
     |
+    // errors
     "(" error ")" {
+        $$ = new ast::NoExp();
         yyerrok;
     }
     |
     rfun "(" error ")" {
+        $$ = new ast::NoExp();
         yyerrok;
-    }
-    ;
-
-constants:
-    constants "," new_id ":=" expression {
-        $$ = $1;
-        $$->push_back(new ast::Var($3, ast::RType(builtin::IntTypeId()), $5, true));
-    }
-    |
-    new_id ":=" expression {
-        $$ = new std::vector<ast::Var*>();
-        $$->push_back(new ast::Var($1, ast::RType(builtin::IntTypeId()), $3, true));
     }
     ;
 
@@ -515,6 +580,13 @@ rtype:
     |
     "str" {
         $$ = ast::RType(builtin::StrTypeId());
+    }
+    |
+    // errors
+    error {
+        $$ = ast::RType(builtin::ErrorType()->id());
+        yyclearin;
+        yyerrok;
     }
     ;
 

@@ -2,49 +2,16 @@
 
 #include <algorithm>
 #include <iomanip>
+
 #include "builtin.hpp"
 #include "identifiers.hpp"
 #include "ast.hpp"
 #include "log.hpp"
-#include "types.hpp"
 #include "statements.hpp"
 
 namespace compiler {
 
 namespace identifiers {
-
-class ImaginaryErrorType : public ast::Type {
-  public:
-    ImaginaryErrorType(identifiers::Id* id) : Type(id) {}
-
-    virtual inline std::string llvm_name() override {
-        return ".error_type";
-    }
-
-    virtual inline int def_alignment() override {
-        return 0;
-    }
-};
-
-inline ast::Fun* ErrorFun() {
-    static ast::Fun* ptr = nullptr;
-    if (ptr == nullptr) {
-        ptr = new ast::Fun(identifiers::NewId(".error_function"),
-                           ast::RType(builtin::IntTypeId()),
-                           {},
-                           {},
-                           {});
-    }
-    return ptr;
-}
-
-inline ast::Type* ErrorType() {
-    static ast::Type* ptr = nullptr;
-    if (ptr == nullptr) {
-        ptr = new ImaginaryErrorType(identifiers::NewId(".error_type"));
-    }
-    return ptr;
-}
 
 /*
  * @brief Binds NamedAbstractions who own a name (the name cannot be overloaded).
@@ -155,7 +122,7 @@ ast::Fun* NameResolution::FromFunSig(Id* id, const std::vector<ast::Type*>& sign
         if (info.ids[index]->scope_ != id->scope_->parent_)
             break;
     }
-    return ErrorFun();
+    return builtin::ErrorFun();
 }
 
 void NameResolution::Do() {
@@ -283,7 +250,7 @@ ast::Type* NameResolution::GetType(ast::RVar& rvar) {
 }
 
 ast::Type* NameResolution::operator()(ast::NoExp* no_exp) {
-    return ErrorType();
+    return builtin::ErrorType();
 }
 
 ast::Type* NameResolution::operator()(ast::IntLit* int_lit) {
@@ -300,10 +267,10 @@ ast::Type* NameResolution::operator()(ast::FunCall* call) {
         args_types.push_back(GetType(arg));
     }
     ast::Fun* fun = FromFunSig(call->rfun.id, args_types);
-    if ((call->rfun.fun = fun) == ErrorFun()) {
+    if ((call->rfun.fun = fun) == builtin::ErrorFun()) {
         semantic_log << "Invalid call to function "
                      << call->rfun.id->name() << '\n';
-        return ErrorType();
+        return builtin::ErrorType();
     } else {
         return fun->rtype().ty;
     }
@@ -315,7 +282,7 @@ ast::Type* NameResolution::operator()(ast::RVar& rvar) {
 
     if (not rvar.id->IsAVariable()) {
         semantic_log << rvar.id->name() << " is not a variable!\n";
-        return ErrorType();
+        return builtin::ErrorType();
     }
     rvar.var = rvar.id->ref.var;
 
@@ -326,9 +293,9 @@ template<ast::UnaryOperators op>
 ast::Type* NameResolution::operator()(ast::UnaOp<op>* una_op) {
     ast::Type* type = GetType(una_op->exp);
     una_op->rfun.fun = FromFunSig(una_op->rfun.id, {type});
-    if (una_op->rfun.fun == ErrorFun()) {
+    if (una_op->rfun.fun == builtin::ErrorFun()) {
         semantic_log << "Invalid use of operator " << static_cast<char>(op) << '\n';
-        return ErrorType();
+        return builtin::ErrorType();
     }
     return una_op->rfun.fun->rtype().ty;
 }
@@ -339,9 +306,9 @@ ast::Type* NameResolution::operator()(ast::BinOp<op>* bin_op) {
     ast::Type* rhs_type = GetType(bin_op->rhs);
 
     bin_op->rfun.fun = FromFunSig(bin_op->rfun.id, {lhs_type, rhs_type});
-    if (bin_op->rfun.fun == ErrorFun()) {
+    if (bin_op->rfun.fun == builtin::ErrorFun()) {
         semantic_log << "Invalid use of operator " << static_cast<char>(op) << '\n';
-        return ErrorType();
+        return builtin::ErrorType();
     }
     return bin_op->rfun.fun->rtype().ty;
 }
