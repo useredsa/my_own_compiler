@@ -133,9 +133,10 @@
 // Destructors of discarded symbols //TODO
 // %destructor { } <int> <ast::RType> <ast::RVar>      // Types with no explicit destructor defined
 //                 <ast::RFun> <ast::Stmt> <ast::Exp>
-// %destructor { free($$); } <identifiers::Id*>        // Pointers to types with no destructor defined
+// %destructor {  }          <identifiers::Id*>        // Pointers to types with no destructor defined
 //                           <ast::Fun*>
 //                           <ast::Var*>
+//                           <std::string*>
 // %destructor { delete $$; } <*>                      // Default destructor for type defined symbols
 
 
@@ -166,7 +167,15 @@ program:
     }
     |
     // errors
-    error ";" { yyerrok; } functions declarations compound_statement "." {
+    error ";" { yyerrok; } functions
+    {
+    	identifiers::AddNameScope(identifiers::kCronological);
+        identifiers::NewId(".main");
+    }
+    declarations compound_statement "." {
+        $declarations->push_back(new ast::Var(identifiers::GetId(".main"),
+                                              ast::RType(builtin::IntTypeId()),
+                                              ast::Exp(new ast::IntLit(0))));
         ast_root = new ast::Prog(std::move(std::string(".error_program")),
                                  std::move(*$functions),
                                  std::move(*$declarations),
@@ -653,6 +662,8 @@ id_ref:
 %%
 
 void yy::parser::error(const std::string& m) {
-    std::cerr << yylineno << ": ERROR: " << m << '\n';
+    std::string e = m;
+    if (m.substr(0,14) == "syntax error, ")
+        e = m.substr(14);
+    std::cerr << "Syntax Error: " << yylineno << ": " << e << '\n';
 }
-

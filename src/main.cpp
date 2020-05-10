@@ -102,9 +102,16 @@ int main(int argc, char* argv[]) {
         exit(-12);
     }
 
-
-    std::ofstream os(OUTPUT_FILE);
-    compiler::llvm::Translator translator(os);
-    translator.Output(ast_root);
+    if (compiler::semantic_log.GetCounter() == 0 and
+        compiler::lexical_log.GetCounter() == 0 and
+        compiler::internal_log.GetCounter() == 0) {
+        std::ofstream os(OUTPUT_FILE);
+        compiler::llvm::Translator translator(os);
+        translator.Output(ast_root);
+    } else {
+        std::cout << "Number of lexical errors: " << compiler::lexical_log.GetCounter();
+        //std::cout << "Number of syntactic errors: " << compiler::syntax_log.GetCounter();
+        std::cout << "Number of semantic errors: " << compiler::semantic_log.GetCounter();
+    }
 }
 

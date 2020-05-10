@@ -71,9 +71,9 @@ read                            return yy::parser::token::READ;
 <INLINE_COMM_COND>"\n"          BEGIN(INITIAL);
 "(*"                            lineStart = yylineno, BEGIN(COMMENT_COND);
 <COMMENT_COND><<EOF>>           {
-                                  lexical_log << "Unclosed comment starting on line: "
+                                  lexical_log << "Unclosed comment starting at line "
                                               << lineStart << "\n";
-                                  BEGIN(INITIAL);
+                                  exit(-1);
                                 }
 <COMMENT_COND>(.|\n)            ;
 <COMMENT_COND>"*)"              BEGIN(INITIAL);
@@ -85,15 +85,15 @@ read                            return yy::parser::token::READ;
                                   BEGIN(STRING_COND);
                                 }
 <STRING_COND>"\n"               {
-                                  delete strlit;
-                                  lexical_log << "Unclosed String\n";
+                                  lexical_log << yylineno << ": Unclosed String\n";
                                   BEGIN(INITIAL);
-                                  return yy::parser::token::STRLIT;
+                                  return yy::parser::make_STRLIT(strlit);
                                 }
 <STRING_COND>[^\"\n]            {
                                   if (strlit->length() + yyleng + 2 >= MAX_STRING_LITERAL_SIZE) {
-                                    lexical_log << "String literal surpasses maximum size\n";
-                                    exit(-1);
+                                    lexical_log << yylineno
+                                                << ": String literal surpasses maximum size\n";
+                                    return yy::parser::make_STRLIT(strlit);
                                   }
                                   if (yytext[yyleng-1] == '\\') {
                                     strlit->append(yytext, yyleng-1);
@@ -121,7 +121,8 @@ read                            return yy::parser::token::READ;
 {integer}                       {
                                   long long val = atoll(yytext);
                                   if (val >= (1LL<<31) || val < -(1LL<<31))
-                                    warning_log << "Integer literal out of range\n";
+                                    warning_log << yylineno
+                                                << ": Integer literal out of range\n";
                                   return yy::parser::make_INTLIT(val);
                                 }
 
@@ -133,9 +134,14 @@ read                            return yy::parser::token::READ;
                                 }
 
 ({letter}|_)({letter}|{digit}|_){16,16} {
-                                  lexical_log << yylineno << ": Oversized identifier\n";
-                                  exit(-1);
+                                  lexical_log << yylineno
+                                              << ": Oversized identifier, changed into BigXXLname\n";
+                                  BEGIN(LARGE_ID_COND);
+                                  std::string* lexem = new std::string("BigXXLname");
+                                  return yy::parser::make_NAME(lexem);
                                 }
+<LARGE_ID_COND>({letter}|{digit}|_) ;
+<LARGE_ID_COND>.                { yyless(0); BEGIN(INITIAL); }
 
  /*IMPROVEMENT Con ayuda de una condición, podemos protegernos de un overflow*/
 {unrecognized}+                 lexical_log << "Unrecognized symbols " << yytext << "\n";
