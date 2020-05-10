@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include "builtin.hpp"
-#include "types.hpp"
 #include "expressions.hpp"
 
 using std::vector;

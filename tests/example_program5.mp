@@ -14,7 +14,7 @@ begin
 	fib_drawing := 0
 end;
 
-function fibonacci (const n : int) : int
+function fibonacci (n : int) : int
 var a,b, target_a, target_b, tmp1, tmp2 : int;
 begin
 	target_a := 0;
