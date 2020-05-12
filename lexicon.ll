@@ -118,7 +118,7 @@ read                            return yy::parser::token::READ;
                                   return yy::parser::make_STRLIT(strlit);
                                 }
 <LARGE_STRING_COND>[^\"\n]      ;
-<LARGE_STRING_COND>[\"\n]       { yyless(0); BEGIN(INITIAL); }
+<LARGE_STRING_COND>[\"\n]       { BEGIN(INITIAL); }
 
 
 
