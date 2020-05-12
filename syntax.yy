@@ -109,6 +109,7 @@
 %type <ast::Fun*>                             function
 %type <std::vector<ast::Fun*>*>               functions
 %type <ast::Var*>                             single_arg
+%type <std::vector<ast::Var*>*>               optional_args
 %type <std::vector<ast::Var*>*>               args
 %type <std::vector<ast::Var*>*>               declarations
 %type <std::vector<ast::Var*>*>               constants
@@ -220,13 +221,13 @@ function:
               identifiers::NewId(std::string($fun_id->name()));
         }
     }
-    "(" args ")" ":" rtype[return_type] declarations compound_statement {
+    "(" optional_args ")" ":" rtype[return_type] declarations compound_statement {
         switch ($fun_id->name().back()) {
           case static_cast<char>(ast::kPlus):
           case static_cast<char>(ast::kBinMinus):
           case static_cast<char>(ast::kAsterisk):
           case static_cast<char>(ast::kSlash): {
-              if ($args->size() != 2)
+              if ($optional_args->size() != 2)
                   compiler::semantic_log
                     << "Binary operator must be overloaded with exactly 2 arguments\n";
               }
@@ -240,11 +241,11 @@ function:
         }
         $$ = new ast::Fun($fun_id,
                           $return_type,
-                          std::move(*$args),
+                          std::move(*$optional_args),
                           std::move(*$declarations),
                           std::move(*$compound_statement));
         identifiers::AbandonCurrentNameScope();
-        delete $args;
+        delete $optional_args;
         delete $declarations;
         delete $compound_statement;
     }
@@ -257,6 +258,15 @@ function:
     }
     ;
 
+optional_args:
+    args {
+        $$ = $1;
+    }
+    |
+    {
+        $$ = new std::vector<ast::Var*>();
+    }
+
 args:
     args "," single_arg {
         $$ = $1;
@@ -266,10 +276,6 @@ args:
     single_arg {
         $$ = new std::vector<ast::Var*>();
         $$->push_back($1);
-    }
-    |
-    {
-        $$ = new std::vector<ast::Var*>();
     }
     
 single_arg:
