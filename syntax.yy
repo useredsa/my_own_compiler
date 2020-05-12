@@ -157,7 +157,7 @@ program:
     }
     |
     // errors
-    error ";" { yyerrok; } functions
+    error ";" functions
     {
     	identifiers::AddNameScope(identifiers::kCronological);
         identifiers::NewId(".main");

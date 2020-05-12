@@ -22,6 +22,7 @@ std::string* strlit;
 %x COMMENT_COND
 %x INLINE_COMM_COND
 %x LARGE_ID_COND
+%x LARGE_STRING_COND
 
 digit                           [0-9]
 letter                          [a-zA-Z]
@@ -116,6 +117,9 @@ read                            return yy::parser::token::READ;
                                   BEGIN(INITIAL);
                                   return yy::parser::make_STRLIT(strlit);
                                 }
+<LARGE_STRING_COND>[^\"\n]      ;
+<LARGE_STRING_COND>[\"\n]       { yyless(0); BEGIN(INITIAL); }
+
 
 
 {integer}                       {
