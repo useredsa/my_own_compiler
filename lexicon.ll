@@ -22,6 +22,7 @@ std::string* strlit;
 %x COMMENT_COND
 %x INLINE_COMM_COND
 %x LARGE_ID_COND
+%x LARGE_STRING_COND
 
 digit                           [0-9]
 letter                          [a-zA-Z]
@@ -103,7 +104,7 @@ read                            return yy::parser::token::READ;
                                   }
                                 }
 <STRING_ESCAPE_COND>"\\"        strlit->push_back('\\'), BEGIN(STRING_COND);
-<STRING_ESCAPE_COND>"\""        strlit->push_back('\"'), BEGIN(STRING_COND);
+<STRING_ESCAPE_COND>"\""        strlit->append("''"), BEGIN(STRING_COND);
 <STRING_ESCAPE_COND>"t"         strlit->push_back('\t'), BEGIN(STRING_COND);
 <STRING_ESCAPE_COND>"r"         strlit->push_back('\r'), BEGIN(STRING_COND);
 <STRING_ESCAPE_COND>"n"         strlit->push_back('\n'), BEGIN(STRING_COND);
@@ -116,6 +117,9 @@ read                            return yy::parser::token::READ;
                                   BEGIN(INITIAL);
                                   return yy::parser::make_STRLIT(strlit);
                                 }
+<LARGE_STRING_COND>[^\"\n]      ;
+<LARGE_STRING_COND>[\"\n]       { yyless(0); BEGIN(INITIAL); }
+
 
 
 {integer}                       {

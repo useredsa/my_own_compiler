@@ -49,7 +49,7 @@ our view on the code structure of a compiler.
 
 == Compiler Features Overview
 
-=== Rationale of the feautres supported
+=== Rationale of the features supported
 
 
 == Language and Tools

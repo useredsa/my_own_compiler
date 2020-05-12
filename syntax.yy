@@ -130,15 +130,6 @@
 %left  "*" "/"                        // to
 %right UMINUS                         // most precedence
 
-// Destructors of discarded symbols //TODO
-// %destructor { } <int> <ast::RType> <ast::RVar>      // Types with no explicit destructor defined
-//                 <ast::RFun> <ast::Stmt> <ast::Exp>
-// %destructor {  }          <identifiers::Id*>        // Pointers to types with no destructor defined
-//                           <ast::Fun*>
-//                           <ast::Var*>
-//                           <std::string*>
-// %destructor { delete $$; } <*>                      // Default destructor for type defined symbols
-
 
 
 /* Production Rules */
@@ -163,11 +154,10 @@ program:
         delete $functions;
         delete $declarations;
         delete $compound_statement;
-        if (yynerrs_) YYABORT;
     }
     |
     // errors
-    error ";" { yyerrok; } functions
+    error ";" functions
     {
     	identifiers::AddNameScope(identifiers::kCronological);
         identifiers::NewId(".main");
@@ -183,7 +173,6 @@ program:
         delete $functions;
         delete $declarations;
         delete $compound_statement;
-        if (yynerrs_) YYABORT;
     }
     ;
 
@@ -336,6 +325,14 @@ declarations:
         $$->insert($$->end(), $3->begin(), $3->end());
         delete $3;
     }
+    |
+    declarations comma_sep_dcl[ids] ":" rtype ";" {
+        yy::parser::error("syntax error, expecting \"var\" in variable declarations");
+        $$ = $1;
+        for (identifiers::Id* id : *$ids) {
+            $$->push_back(new ast::Var(id, $rtype));
+        }
+    }
     ;
 
 constants:
@@ -356,8 +353,8 @@ compound_statement:
     }
     |  
     // errors
-    "begin" error "end" {
-        $$ = new std::vector<ast::Stmt>();  //TODO
+    "begin" error "end" {  // This rule parses an all-errors compund_statement
+        $$ = new std::vector<ast::Stmt>();
         yyerrok;
     }
     ;
@@ -368,7 +365,7 @@ semcolon_sep_stmts:
     }
     |
     {
-        $$ = new std::vector<ast::Stmt>();  //TODO
+        $$ = new std::vector<ast::Stmt>();
     }
     |
     // errors
@@ -379,9 +376,9 @@ semcolon_sep_stmts:
     ;
 
 semcolon_sep_stmts_:
-    semcolon_sep_stmts_ ";" statement {
+    semcolon_sep_stmts_ ";" {yyerrok;} statement {
         $$ = $1;
-        $$->push_back($3);
+        $$->push_back($4);
     }
     |
     statement {
@@ -394,9 +391,9 @@ semcolon_sep_stmts_:
         $$ = $1;
     }
     |
-    error statement {
+    error ";" {yyerrok;} statement {
         $$ = new std::vector<ast::Stmt>();
-        $$->push_back($2);
+        $$->push_back($4);
         yyerrok;
     }
     |
@@ -428,7 +425,7 @@ statement:
     "while" expression[cond] "do" statement[stmt] {
         $$ = new ast::WhileStmt($cond, $stmt);
     }
-    | //TODO hay que añadir un namescope? o la variable debe estar ya declarada? Imagino que lo primero
+    |
     "for" rvar[ctrl_var] ":=" expression[init_exp] "to"
     expression[final_exp] "do" statement[body] {
         $$ = new ast::ForStmt($ctrl_var, $init_exp, $final_exp, $body);
@@ -669,5 +666,5 @@ void yy::parser::error(const std::string& m) {
     std::string e = m;
     if (m.substr(0,14) == "syntax error, ")
         e = m.substr(14);
-    std::cerr << "Syntax Error: " << yylineno << ": " << e << '\n';
+    compiler::syntactic_log << yylineno << ": " << e << '\n';
 }

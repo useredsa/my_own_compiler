@@ -39,10 +39,10 @@ class Logger {
  * 
  * Example:
  *     Code:
- *         semantic_error << "Este es mi pana Miguel, él es el test sentence número "
- *                        << semantic_error.GetCounter() << endl;
- *         semantic_error << "Aunque se le ve bien fresco, este es un error diferente\n";
- *         semantic_error << "Y con este ya llevamos " << semantic_error.GetCounter();
+ *         semantic_log << "Este es mi pana Miguel, él es el test sentence número "
+ *                      << semantic_log.GetCounter() << endl;
+ *         semantic_log << "Aunque se le ve bien fresco, este es un error diferente\n";
+ *         semantic_log << "Y con este ya llevamos " << semantic_error.GetCounter();
  *     Output:
  *         Semantic Error: Este es mi pana Miguel, él es el test sentence número 1
  *         Semantic Error: Aunque se le ve bien fresco, este es un error diferente
@@ -60,7 +60,7 @@ extern class BasicLogger : public Logger {
 
   private:
     std::string prefix_;
-} semantic_log, lexical_log, warning_log, internal_log;
+} lexical_log, syntactic_log, semantic_log, warning_log, internal_log;
 
 } // namespace compiler
 
