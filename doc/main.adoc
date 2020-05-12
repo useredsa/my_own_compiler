@@ -1,9 +1,9 @@
 = Compiler Design and Implementation
 Emilio Domínguez_Sánchez <emilio.dominugezs@um.es>; Rubén Gaspar_Marco <ruben.gasparm@um.es>
-v1.0, May 17, 2020:
-:revremark: As presented to our teacher Eduardo Martínez Gracia
+v1.0, May 17, 2020: As presented to our teacher Eduardo Martínez Gracia
+:stem: latexmath
+:source-highlighter: prettify
 :toc:
-//TODO incluir a Eduardo como profesor
 
 == Introduction
 This project corresponds to the practical part of the subject "`Compiladores`" (Compilers).
@@ -52,32 +52,311 @@ our view on the code structure of a compiler.
 === Rationale of the feautres supported
 
 
-== Tools and Framework
-// Flex, Bison, C++, AsciiDoctor, clang-tidy
+== Language and Tools
+We were taught in class how to use Bison.
+Bison is an Open Source parser generator usually used along Flex,
+an Open Source lexical analyzer generator.
+Although originally written for the C language,
+both Bison and Flex allow you to work with {cpp}.
+We chose to use {cpp} because it is a very powerful language and,
+being this a new project,
+we had no reason to stick to C.
+
+In addition, we used
+
+* https://google.github.io/styleguide/cppguide.html[Google's {cpp} Style Guide]
+* https://clang.llvm.org/extra/clang-tidy/[`clang-tidy`]
+  as a linter and style checker.
+* https://asciidoctor.org/[AsciiDoctor] for writing this document.
 
 
 == Compiler Parts
+Imperative languages share some similarities.
+Although they may differ in the implementation,
+the usually share the core concepts.
+
+Statement:: Statements are the basic units of a program.
+In a typical language,
+assignment,
+flow control directives
+(loops, conditional statements and branching statements) and
+function invocations are all statements with their own syntax.
+Expression:: Typically, statements take parameters,
+and these paramenters are usually expressions.
+For example, you can assign a variable a literal value or the sum of two variables.
+Both would be valid expressions (for the assignment value).
+Function:: A function is a set of statements that can be invoked other parts of the program.
+Variable:: A variable is a abstract entity that holds a value which can used (as an expression)
+in statements and can also be modified trough some statements (like assignment).
 
 === Abstraction
-// Abstracción de los conceptos de variable, tipo, etc.
-// Más en el fichero que ronda por esta carpeta.
+We have found that the ability to abstract concepts is key in the design of a compiler.
+We can merge many concepts, leading to an easier understanding and simpler logic.
 
+=== Merging concepts
+We can define a constant as a name that holds a value that cannot be changed.
+When translating to machine code, constants can be allocated in read-only segments
+or globally instead of in the stack. However, for programming purposes,
+a constant is a variable which cannot be modified.
+Whenever we see that a concept can be expressed in terms of another concept in the compiler,
+we will find languages which merge both concepts.
 
-== Our language grammar and semantics
-// Gramática original, nuestra gramática actual
+For instance, in {cpp} variables declared with the `const` attribute may not be modified,
+but they aren't exactly constants.
+The reason is that a function can take a constant reference to a variable as a parameter,
+which means that the address of memory associated with that variable can be read inside the
+function by means of using the variable name,
+but the compiler ensures that the variable is not modified,
+even though if the variable wasn't declared as `const` in the function that called it,
+the same address of memory could be modified there.
+
+As another example, expressions can be thought of as statements.
+The reason is that in some languages they can modify the state of the computer,
+just as statements.
+In general, a statement could be thought as an expression which doesn't return a result,
+or expressions could be the statements that did return a result.
+In the Lisp family of languages, every statement returns a value that can be used for
+another statement. Therefore, there is not a distinction between the two.
+We can also shorten the distance between expressions and statements by making the return
+type of some statements a special type of which the programmer cannot handle values.
+
+=== Definition and usage
+Programming languages serve the purpose of creating programs that
+process data and do calculations.
+Some languages mantain a structre very similar to assembly.
+However, all of them introduce modular entities
+that the programmer can customize and use.
+Variables can be declared.
+Types can be created grouping smaller types.
+Functions can be created grouping statements.
+
+It is common that an identifier (a name) is used to refer to this entities.
+When this is the case, we usually need to conceptually separate the difference between
+the definition,
+i.e. the programmer specifies that
+there is a function with name `foo` that consists of these statements;
+and the usage,
+the programmer calls a function defined at some point in the code.
+C and {cpp} even diferentiate between declarations and implementations,
+where the declaration only specifies how an object can be used
+(which parameters does a function take).
+
+The difference must translate to the abstract syntax tree too.
+We must have different nodes for a function definition and a function call.
+And again, this can be generalized further.
+{cpp} considers the construction `name(args)` as an operator and allows overloading it.
+Therefore, in {cpp} you can call a function but you can also call a variable whose type
+has the operator overloaded.
+This is a usage abstraction and gives place to the concept of callable.
+
+== Language Grammar in BNF format
+:lambda: &lambda;
+[frame=none, grid=none, stripes=none]
+|===
+|program              | -> | `program` id `(` `)` `;`                      +
+                             functions                                     +
+                             declarations                                  +
+                             compound_statement `.`
+|functions            | -> | (function `;`)*
+|                     | \| | {lambda}
+|function             | -> | `function` id `(` optional_args `)` `:` type  +
+                              declarations                                 +
+                              compound_statement
+|optional_args        | -> | args
+|                     | \| | {lambda}
+|args                 | -> | single_arg
+|                     | \| | args `,` single_arg
+|single_arg           | -> | id `:` type
+|                     | \| | `const` id `:` type
+|type                 | -> | int
+|                     | \| | str
+| declarations        | -> | declarations `var` idenifiers `:` type `;`
+|                     | \| | declarations `const` constants `;`
+|                     | \| | {lambda}
+| identifiers         | -> | id
+|                     | \| | identifiers `,` id
+|constants            | -> | id `:=` expression
+|                     | \| | constants `,` id `:=` expression
+|compound_statement   | -> | `begin`                                       +
+                                 optional_statements                       +
+                             `end`                                         +
+|optional_statements  | -> | statements
+|                     | \| | {lambda}
+|statements           | -> | statement
+|statements           | \| | statements `;` statement
+
+|statement            | -> | id `:=` expression
+|                     | \| | `if` expression `then`                        +
+                                  statement                                +
+|                     | \| | `if` expression `then`                        +
+                                  statement                                +
+                             `else`                                        +
+                                  statement                                +
+|                     | \| | `while` expression `then`                     +
+                                  statement                                +
+|                     | \| | `for` id `:=` expression `to` expression `do` +
+                                  statement
+|                     | \| | `write` `(` expressions `)`
+|                     | \| | `read` `(` identifiers `)`
+|                     | \| | compound_statement
+
+|optional_expressions | -> | expressions
+|                     | \| | {lambda}
+|expressions          | -> | expression
+|                     | \| | expressions `,` expression
+|expression           | -> | expression `+` expression
+|                     | -> | expression `-` expression
+|                     | -> | expression `*` expression
+|                     | -> | expression `/` expression
+|                     | -> | `-` expression
+|                     | -> | `(` expression `)`
+|                     | -> | id
+|                     | -> | int_lit
+|                     | -> | str_lit
+|                     | -> | id `(` optional_expressions `)`
+|===
+
+Where `id`, `int_lit` and `str_lit` are identifiers, int literals and str literals
+as recognized by our lexical analyzer.
 
 
 == Implementation I
+Designing a language and designing the compiler are completely different tasks.
+Designing a language involves choosing its features
+(knowing in advance that they can be achieved)
+and how they interact.
+Designing the compiler is designing an application...
+using a programming language.
+
+We believe a natural separation of a compiler is
+
+* The structure known as the abstract syntax tree (AST)
+* The algorithms that operate on that structure
+
+However, this separation is rather obvious and provides little help to beginners.
+We believe this is a better classification.
+
+* The lexer, which divides the input in tokens.
+* The parser, which builds the initial AST from the tokens
+* The name resolution algorithms, which bind each identifier with a definition
+* The type system structures and algorithms, in charge of types equivalence,
+  conversion and other advanced features, such as inheritance
+* The semantic correction algorithms, which check things such that the expressions
+  and the variable in a typical `for` statement are of the same type.
+* The optimization algorithms, which modify the AST
+* The translation algorithm, which produces the final result.
+
+This could be a good modularization of a compiler project.
+Nevertheless, there are also dependencies between systems.
+For example, a name resolution algorithm first applies to identify the possible
+functions that can be associated with a function call.
+After that, there must be a criteria for choosing which one applies.
+However, that algorithm needs to know which types are compatible.
+Hence, it can be difficult to separate the name resolution algorithms
+from the type system.
 
 === Variants or Inheritance. The visitor pattern.
-// std::variant y std::visit.
-// Mezcla de variants y herencia
+As we have already seen, a lot of algorithms in the compiler are related to the AST.
+When programming a smaller compiler such as ours,
+without a rich type system and without optimization phases,
+it might sound reasonable to implement the AST using inheritance.
 
-=== Expressions
-// Lista de expressions
+[quote,,Crafting a Compiler<<check>>]
+ASTs for Languages like Java contain ∼50 node types,
+and compilers like the GNU Compiler Collection (GCC) have ∼200 phases.
 
-=== Statements
-// Lista de statements
+As programmers of a small compiler, we cannot recommend this.
+Even in a small compiler you would need to implement 3 to 5 virtual functions
+for each node of the AST.
+This results in code with the same purpose being dispersed along multiple files.
+
+In addition, declaring an interface for what functions does an expression allow
+does not scale properly.
+As the complexity increases, a node can start implementing many interfaces.
+
+Our implementation uses {cpp} 17's `std::variant` to simulate the visitor design pattern.
+With this approach, an expression is one of many possibilities, instead of a base class.
+
+.Expression definition
+[source,cpp]  
+---- 
+enum UnaryOperators : char {
+    kUnaMinus = '-',
+};
+
+enum BinaryOperators : char {
+    kPlus     = '+',
+    kBinMinus = '-',
+    kAsterisk = '*',
+    kSlash    = '/',
+};
+
+template<UnaryOperators op>  struct UnaOp;
+template<BinaryOperators op> struct BinOp;
+class Id;
+struct IntLit;
+struct StrLit;
+struct FunCall;
+struct NoExp;
+
+
+using Exp = std::variant<
+    UnaOp<kUnaMinus>*,
+    BinOp<kPlus>*,
+    BinOp<kBinMinus>*,
+    BinOp<kAsterisk>*,
+    BinOp<kSlash>*,
+    RVar,
+    IntLit*,
+    StrLit*,
+    FunCall*,
+    NoExp*
+>;
+----
+
+The AST becomes a very simple data structure which the algorithms are free to modify.
+
+.A function call node
+[source,cpp]
+----
+struct FunCall {
+    RFun rfun;
+    std::vector<Exp> args;
+
+    FunCall(RFun rfun, std::vector<Exp>&& args) : rfun(rfun), args(args) {  };
+};
+----
+
+And we can include all the code related to a pass over the AST inside a single class
+which packs the methods and the data it needs to act.
+This also favors debugging of large systems,
+because this type of system doesn't rely on singletons.
+We can create as many instances of an optimizer as we want and pass a suite of tests
+over plainly ASTs defined by the programmer.
+
+=== AST structure
+The definition of the whole AST is divided in four files.
+
+https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/ast_defs.hpp[ast_defs.hpp]::
+Contains the basic definitions of the AST.
+It contains the supported operators,
+the variant expression (`Exp`) and
+the variant statement (`Stmt`).
+
+https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/ast.hpp[ast.hpp]::
+Contains the AST classes which are objects in the language and have a detailed description
+of their implementation as declared by the programmer.
++
+These classes are special because they can pack information that is needed for the final translation.
+We have also considered a good choice to inherit from these classes,
+because in this case the class polymorphism was beneficial.
+For example, our builtin operators inherit from `Fun`, the class that represents a function.
+
+https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/expressions.hpp[expressions.hpp]::
+Declares the expression nodes.
+
+https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/statements.hpp[statements.hpp]::
+Declares the statements structures.
 
 
 == Implementation II
@@ -99,3 +378,7 @@ our view on the code structure of a compiler.
 === How to continue the project
 // Lista de ideas de cómo se puede mejorar
 
+[bibliography]
+== References
+
+- [[[craft,1]]] Charles N. Fischer, Ron K. Cytron & Richar J. LeBlanc, Jr. Crafting a Compiler. Addison-Wesley. 2010.
