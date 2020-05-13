@@ -400,7 +400,6 @@ semcolon_sep_stmts_:
     error ";" {yyerrok;} statement {
         $$ = new std::vector<ast::Stmt>();
         $$->push_back($4);
-        yyerrok;
     }
     |
     semcolon_sep_stmts_ statement {

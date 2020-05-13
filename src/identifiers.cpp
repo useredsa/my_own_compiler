@@ -67,13 +67,13 @@ vector<size_t> acronological_scopes;
 std::unordered_map<string, NameInfo> name_table;
 
 
-NameScope* current_name_scope() {
+inline NameScope* current_name_scope() {
     return active_scopes.back();
 }
 
 NameScope* AddNameScope(NameScopeType type) {
     auto* scope = new NameScope(type,
-                                (active_scopes.empty()? nullptr : active_scopes.back()));
+                                (active_scopes.empty()? nullptr : current_name_scope()));
     program_scopes.push_back(scope);
     if (type == kAcronological) {
         acronological_scopes.push_back(active_scopes.size());
@@ -123,10 +123,10 @@ Id* NewId(string&& name, NameScope* scope, size_t scope_pos) {
 Id* NewId(string&& name) {
     NameInfo& info = name_table[name];
     if (Id* ptr = pop_unactive(&info); ptr and
-        ptr->namescope() == active_scopes.back()) {
+        ptr->namescope() == current_name_scope()) {
         return ptr;
     }
-    return NewId(std::move(name), active_scopes.back(), active_scopes.size()-1);
+    return NewId(std::move(name), current_name_scope(), active_scopes.size()-1);
 }
 
 Id* GetId(string&& name) {

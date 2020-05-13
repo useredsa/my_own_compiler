@@ -24,9 +24,6 @@ void NameResolution::FirstPass() {
         });
 
         for (size_t i = 0; i < info.ids.size(); ++i) {
-            // semantic_log << "identifier " << info.ids[i]->name()
-            //              << " from scope " << info.ids[i]->scope_ 
-            //              << " " << (info.ids[i]->abstracts_ == kUnresolved) << "\n";
             if (info.ids[i]->abstracts_ == kUnresolved) {
                 NameScope* parent_scope = info.ids[i]->scope_->parent_;
                 for (size_t j = 0; j < i; ++j) {
@@ -281,13 +278,14 @@ ast::Type* NameResolution::operator()(ast::FunCall* call) {
         args_types.push_back(GetType(arg));
     }
     ast::Fun* fun = FromFunSig(call->rfun.id, args_types);
-    if ((call->rfun.fun = fun) == builtin::ErrorFun()) {
+    if (fun == builtin::ErrorFun()) {
         semantic_log << "Invalid call to function "
                      << call->rfun.id->name() << '\n';
         return builtin::ErrorType();
-    } else {
-        return fun->rtype().ty;
     }
+    call->rfun.fun = fun;
+    
+    return fun->rtype().ty;
 }
 
 ast::Type* NameResolution::operator()(ast::RVar& rvar) {
