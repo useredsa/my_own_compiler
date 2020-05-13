@@ -107,7 +107,7 @@ The reason is that a function can take a constant reference to a variable as a p
 which means that the address of memory associated with that variable can be read inside the
 function by means of using the variable name,
 but the compiler ensures that the variable is not modified,
-even though if the variable wasn't declared as `const` in the function that called it,
+even though the variable wasn't declared as `const` in the function that called it,
 the same address of memory could be modified there.
 
 As another example, expressions can be thought of as statements.
@@ -123,7 +123,7 @@ type of some statements a special type of which the programmer cannot handle val
 === Definition and usage
 Programming languages serve the purpose of creating programs that
 process data and do calculations.
-Some languages mantain a structre very similar to assembly.
+Some languages mantain a structure very similar to assembly.
 However, all of them introduce modular entities
 that the programmer can customize and use.
 Variables can be declared.
@@ -157,11 +157,16 @@ This is a usage abstraction and gives place to the concept of callable.
                              functions                                     +
                              declarations                                  +
                              compound_statement `.`
-|functions            | -> | (function `;`)*
+|functions            | -> | functions function `;`
 |                     | \| | {lambda}
-|function             | -> | `function` id `(` optional_args `)` `:` type  +
+|function             | -> | `function` function_id `(` optional_args `)` `:` type  +
                               declarations                                 +
                               compound_statement
+|function_id          | -> | id
+|                     | \| | `+` "operator"
+|                     | \| | `-` "operator"
+|                     | \| | `*` "operator"
+|                     | \| | `/` "operator"
 |optional_args        | -> | args
 |                     | \| | {lambda}
 |args                 | -> | single_arg
@@ -219,7 +224,52 @@ This is a usage abstraction and gives place to the concept of callable.
 Where `id`, `int_lit` and `str_lit` are identifiers, int literals and str literals
 as recognized by our lexical analyzer.
 
-%TODO Rubén, explica la semántica y que se pueden usar funciones antes de declarar y todo eso
+=== Static semantics
+Let's define some features of our language that we cannot express in standard syntactic formalisms.
+
+==== Operators available
+There are already defined some operators for our built-in types int and str. They are:
+
+* Given two expressions of type int `a` and `b`:
+
+** Unary minus operator: `-a` returns the additive inverse of `a`.
+
+** Binary plus operator: `a + b` returns `a` plus `b`.
+
+** Binary minus operator: `a - b` returns `a` minus `b`.
+
+** Binary asterisk operator `a * b` returns `a` times `b`.
+
+** Binary slash operator `a / b` returns the signed integer quotient of `a` and `b` rounded towards zero.
+
+* Given two expressions of type str `a` and `b`:
+
+** `a` + `b` returns the concatenation of `a` and `b`.
+
+==== Function and operator overloading
+In some programming languages, it is an error to define multiple functions with the same name and different implementations in the same scope. But this is not the case of our language, since you can use the same function name for more than one function definition provided that they differ either by the arity or types of their parameters.For this reason, our compiler must be capable of determine the most appropriate function to use in case of a call expression.
+
+In addition to the previously mentioned, you can define or overload the available operators of our language (`+`, `-`, `*`, `/`) with any type (built-in or user-defined). This is because operators are just functions defined with special names: "X operator", where X is the operator. Like any other function, an operator has a return type and a parameter list.
+
+.* operator defined in https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master//tests/example_program5.mp[example_program5.mp]
+==========================
+    function * operator (const lhs : str, const rhs : int) : str
+==========================
+
+==== Name scopes
+%TODO Supongo que aquí insertaría gran parte de lo que has puesto tú.
+The name scope in which functions are defined is acronological and global, it means that every reference to a function in any point of the code is valid provided that at some other point (it could be afterwards) the function referenced is well defined.
+
+In any other case, as long as we have not implemented the user-defined scopes nor declarations in compound statements, all the other scopes are chronological and they are the main compound statement scope, and the compound statement of every function. This means that variables must be defined where they are used.
+
+==== Constants
+%TODO Aquí tambié insertaría lo que dices de las constants
+%TODO No sé muy bien qué decir de las constants aparte de que solo tenemos de tipo int
+
+==== Types in assignments
+An assignment operation is the process in which a expression is associated with a particular variable in a certain moment. In our languages the type of the expression in any assignment is checked staticly and there are no implicit (nor explicit) conversions implemented, so the type used i the l-value and in the r-value must be the same.
+
+%TODO Supongo que esta sección debería ser la definición del lenguaje o algo así
 
 == Implementation I
 Designing a language and designing the compiler are completely different tasks.
@@ -512,7 +562,7 @@ The AST is defined in a way that an expression or statement which uses a variabl
 has a member of type `RVar` instead of a pointer to a variable object (`Var*`).
 During the name resolution pass, we change the reference to point to the object,
 whose information is has been referenced inside the `identifiers::Id` class.
-Passes that happen after the this one use this references
+Passes that happen after this one use this references
 as if they pointed to the named abstraction.
 
 This is only an implementation detail,
@@ -542,6 +592,7 @@ that ensure the program correctness.
 
 === Semantic Checks
 //TODO rubensio
+//TODO Una vez que he explicao la semantica y he puesto cómo detectamos errores no sé qué hacer aquí
 
 === Type Handling
 We designed our compiler with the idea of being able to support user-defined types.
@@ -550,7 +601,204 @@ However, we have not had time to do so.
 Fortunately, we designed our compiler with two primitive types.
 This means we considered type checking in our design.
 
+=== Error Reporting
+Many verification performed by the compiler to ensure that the input text representation of the program fullfils the syntactic and semantic requirements. Through these verifications we can catch some errors in the input and report them to the user in form of error messages. We can classify the analysis in three phases:
+
+* Lexical phase
+* Syntactic phase
+* Semantic phase
+
+In each of this phases we have an instance of `BasicLogger`, the object in charge of reporting the error messages in the terminal and keeping an account of the errors detected in that phase.
+
+.`Logger`, class that virtually defines a `BasicLogger`
+[source,cpp]  
+----
+class Logger {
+  public:
+    explicit Logger(std::ostream& os) : os_(os) {
+        counter = 0;
+    }
+
+    template<typename T>
+    std::ostream& operator<< (const T& val) {
+        ++counter;
+        os_ << prefix() << val;
+        return os_;
+    }
+
+    inline int GetCounter() {
+        return counter;
+    }
+
+    inline std::ostream& os() {
+        return os_;
+    }
+
+  protected:
+    virtual std::string prefix() = 0;
+    std::ostream& os_;
+
+  private:
+    int counter;
+};
+----
+
+Our target in the rest of this section is to inform about the error recovery procedures followed in order to maximize the number of errors detected and reported with one execution of the compiler.
+
+==== Lexical phase
+During the lexical analysis phase we can detect some typical errors:
+
+* Unclosed comments or strings
++
+This type of error is treated by placing the scanner in the corresponding start condition and matching the applicable rules until end-of-file or line feed are encountered, respectively.
++
+NOTE: *Start Conditions*. Flex provides a mechanism for conditionally activating rules. Any rule whose pattern is prefixed with "<sc>" will only be active when the scanner is in the start condition named "sc". More in http://dinosaur.compilertools.net/flex/flex_11.html
+
+* Exceeding length of identifiers or literals
+** String literals
++
+In this case, each time we scan a new character to be added to the string, the sum of the current string size and the size of the character sequence in `yytext` is checked in order to not surpass the string maximum size (7kB). In case this happens, we have a special start condition in which all the characters until `\n` or `\"` are encountered are skipped, and then the scanner returns to the initial start condition.
+
+** Integer literals
++
+Once we scan a digit sequence, we simply check if the number represented by that sequence is greater than or equal to 2^32^, or less than -2^32^ with the code below
+[source, C++]
++
+----
+val >= (1LL<<31) || val < -(1LL<<31)
+----
+** Identifiers
++
+There is a specific rule for this case, `({letter}|_)({letter}|{digit}|_){16,16}`. The reason of the fixed size of 16 is avoiding an overflow while the identifier is being scanned, and the rest of the identifier is not a problem because we treat it in a similar way we did with too-large strings, that is, ignoring all the characters that could be part of the identifier thanks to a new start condition. At the moment we scan a character that is not part of the identifier, we return it to the input with the sentence `yyless(0)`, and the scanner returns to the initial condition, changing the oversized identifier into `BigXXLName`.
++
+NOTE: *yyless(n)* returns all but the first n characters of the current token back to the input stream, where they will be rescanned when the scanner looks for the next match.
+
+* Appearance of illegal characters
++
+There are a bunch of characters that our scanner recognizes as illegal characters because we don't associate them with any token, that is, the deterministic finite automaton that represents our lexicon doesn't have a valid transition for the input character form the current state. The scanner catches a sequence of these characters until a valid character is found with the rule `[^0-9a-zA-Z()".,:;=+\-*/\\ \t\r\n]+`. This is called panic mode recovery.
+
+==== Syntactic phase
+In the syntactic analysis, two methods have been chosen:
+
+* *Panic mode recovery*. When a unexpected token is recieved while parsing the program according to the language syntax, the parser discards all the incoming tokens until a token in a selected set of synchronizing tokens appears.
+
+* *Error production*. Certain errors can be incorported by augmenting the grammar with error productions that generate erroneous constructs. This method allow us to generate appropriate error messages and continue immediately.
+
+===== Error production
+We begin by observing in which cases we were able to use the second method, since these cases don't need more explanation. In all rules where a ";" was needed (always as a separator), we added an additional rule that can parse the symbol resulting of subtracting the semicolon token from the symbol parsed by the original rule. Similar procedure has been taken with the absence of the token `"then"` in the if statement, the token `"do"` in the while statement or the token `"var"` in a variable declaration. This technique is useful not only in the lack of tokens, but also in the innecessary presence of them, as in the case of the semicolon after the last statement in a begin-end block. As an improvement of the compiler, we could add more of these rules to, for example, produce the error related to the absence of the `"begin"` token in the compound_statement symbol, a mismatched brackets, etc.
+
+===== Panic mode recovery
+The first method is used in the rest of the cases. The strategy that has been followed is based on looking for tokens that can lead us to a steady state, from which we can continue the parsing without high risk of propagate the "same" error; this is also why we normally use the sentence `yyerrok;` right after the synchronization token is found.
+
+NOTE: To prevent an outpouring of error messages, the parser will output no error message for another syntax error that happens shortly after the first; only after three consecutive input tokens have been successfully shifted will error messages resume. You can make error messages resume immediately by using the macro `yyerrok` in an action. 
+
+Now let's take a closer look at the error rules in https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/syntax.yy[syntax.yy], from top to bottom. The first error rule appearing is related to an error in the program header the program symbol
+
+    program:
+        ...
+        error ";" functions declarations compound_statement "."
+
+It is clear that this rule is enough for this symbol (although it makes the parser discard all the valid tokens previous to the error), provided that there are error rules for symbols `functions`, `declarations` and `compound_statement`.
+For the symbol `function` we have the rule
+
+    function:
+        ...
+        "function" error declarations compound_statement
+
+that again relies on the error rules of symbols `declarations` and `compound_statement`. In this case the synchronization tokens are `"var"` and `"const"`, so we are forced to not have a rule that starts with the token error in the symbol `declarations`, but we decided this was fine because a variable declaration without the `"var"` token is already conceived by the rule
+
+    declarations:
+        ...
+        declarations comma_sep_dcl[ids] ":" rtype ";"
+        ...
+
+and other error without the `"var"` token is "weird". If this thing occurs, the error is recovered in the error rule of the symbols `program` or `function`. So, for the `declarations` symbol, we have the rules
+
+    declarations:
+        ...
+        declarations "var" error ";"
+        |
+        declarations "const" error ";"
+        ...
+
+In respect of the statements, we have these error rules:
+
+    statement:
+        ...
+        |
+        semcolon_sep_stmts_ error
+        |
+        error ";" {yyerrok;} statement
+        ...
+
+The second one allow us to discard incorrect statements (and report all of them thanks to `yyerrok`) until the first valid statement is found, and the first one parses invalid tokens until the lookahead token is the semicolon token, moment when the parses shifts the semicolon in rule
+
+    statement:
+        semcolon_sep_stmts_ ";" {yyerrok;} statement
+        ...
+
+allowing us, once again, to report all the contiguous incorrect sentences and continue with the correct parsing of the program. But what if all of the statements of a `compound_statement` are incorrect? In that case none of the presented rules are helpful, so we introduce a new rule for the symbol `compound_statement`
+
+    compound_statement
+        ...
+        "begin" error "end"
+
+In fact, this is also a strategy for the panic mode recovery, it consists in recover to the matching close-delimiter of an opening-delimiter that has already been parsed. We do this everytime a opening-bracket is parsed in a statement or in a expression, and we insert instances of the special classes `ast::EmptyStmt` and `ast::NoExp` respectively, to maintain consistency in the AST.
+
+The last error rule is the one in symbol `rtype`:
+
+    rtype:
+        ...
+        error {
+            $$ = ast::RType(builtin::ErrorType()->id());
+            yyclearin;
+            yyerrok;
+        }
+
+As we can see, our grammar accept any token (in fact, accept the token error, discarding the unexpected lookahead token with the macro `yyclearin`) besides the expected tokens "int" and "str" by inserting a reference to the type explicitly defined for error cases `ErrorType`. When user-defined types are implemented, this rule will not be necessary because instead, the semantic phase would be responsible of checking that the identifier referenced belongs to a type.
+
+==== Semantic phase
+While building the AST, we can detect the redefinition of an object by simply checking our symbol table `name_table` in pursuit of already defined objects with that identifier in the same scope, but we have to wait until we have our AST complete to do other kinds of checking:
+//TODO EXPLAIN THE DIFFERENCE BETWEEN IDENTIFIER RESOLUTION AND REFERENCE RESOLUTION
+
+* References to non-existing objects:
++
+As we said before, we have both cronological and acronological name scopes, so we can't check if an indentifier is undeclared until the symbol table is complete. Once all the identifiers have been registered, we bind all the references that share a name in the `FirstPass()` method and if, given an identifier, we cannot determine what object does it refer to (i.e. there is no object defined with that id in this scope or in a superior one), we report that as an unresolved identifier.
+
+* Repeated functions:
++
+Due to function overloading, we cannot know if a function is being redefined only because of his name. Instead, we have to check the types of his argument to do so. This, together with the fact that references to types are not resolved yet, is why we need to check this in an independent pass through the complete AST in the `SecondPass()` method.
+
+* Usage of objects and type checking:
++
+Obviously, we cannot check if an object is being correctly used until all identifiers are resolved, because we can only know how the object is going to be used trough the references that refers to it. So, once all the identifiers have been resolved in the `FirstPass()`, we can check if they are being well used, i.e. if the object they refer to is intended to use it the way that the expression on which the identifier appears tries to. We do this through a visitor named `name_resolver`, that "visit" all the nodes of the AST checking some typical semantic information:
+
+** identifiers used as variables (types) effectively refers to variables (types).
+
+** l-value and r-value have the same type in assignments.
+
+** constants variables are not being used in assignments.
+
+** expressions in if, while and for statements are of int type.
+
+** arguments of write and read are primitive types (the only ones that are printable so far).
+
+** given a list of arguments for a function name, it exists a function with that name and with the types in its parameters in the same order and content that the types of the arguments given. As we treat operators the same way as functions, for both cases we use the function `FromFunSig` to get the overload resolution done, i.e. obtain the object given the parameters and the id/operator.
+
 === Code Generation
+Once we have checked all the possible errors in the input code, we generate the code if there's no error, taking advantage of all the AST treatments that has been made in the process. This is, all the nodes that represented references to objects are now actually references to those objects.
+
+With the AST ready, we use another visitor named `translator` to generate the LLVM code of the program represented by the AST, so each node corresponds to a little piece of code that is written through a given `std::ostream`. This visitor is defined in he file https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/llvm.hpp[llvm.hpp] but let's see a few details:
+
+==== Main statements as a function
+%TODO
+
+==== String literals
+%TODO
+
+==== Local variables allocation
+Every time a variable is declared, we need to allocate memory for it. To allocate memory on the stack frame of the currently executing function we use the https://llvm.org/docs/LangRef.html#alloca-instruction[`alloca`] instruction. This memory is released when the function where the instruction is called returns to its caller. `EasyAlloca` is the method in charge of generate this instruction given a pointer to an object of class Var.
+
 %TODO Rubén
 
 == Conclusions
@@ -604,3 +852,4 @@ In order of importance, we miss
 == References
 
 - [[[craft,1]]] Charles N. Fischer, Ron K. Cytron & Richar J. LeBlanc, Jr. Crafting a Compiler. Addison-Wesley. 2010.
+

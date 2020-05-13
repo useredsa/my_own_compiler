@@ -110,5 +110,9 @@ int main(int argc, char* argv[]) {
                   << compiler::semantic_log.GetCounter() << "\n";
         exit(-12);
     }
+
+    std::ofstream os(OUTPUT_FILE);
+    compiler::llvm::Translator translator(os);
+    translator.Output(ast_root);
 }
 

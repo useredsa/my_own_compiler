@@ -77,8 +77,7 @@ void NameResolution::SecondPass() {
                     if (not rtype.id->IsAType()) {
                         semantic_log << "Return type " << rtype.id->name()
                                      << " is not a type!\n";
-                        rtype.id->abstracts_ = kRedirected;
-                        rtype.id->ref.id = builtin::IntTypeId();
+                        rtype.ty = builtin::ErrorType();
                     } else {
                         rtype.ty = rtype.id->type();
                     }
