@@ -8,7 +8,7 @@ type no hereda de id porque no es una expresión ni se parece a una variable, au
   - object englobaría variables de tipos básicos, funciones, instancias de clases, etc
 
 las funciones tienen que hacer checqueo de el tipo de parámetros que se les pasa, lo que es un por culo
-  - Existen funciones internas (se traducen en instrucciones)
+  - Existen funciones internas (se traducen en instrucciones) //TODO poner en la parte de herencia de funciones
   - y funciones a las que hay que llamar
   - Se pueden abstraer los operadores como funciones, pero hay unos básicos
   - Los operadores builtin podemos hacer que estén ya registrados

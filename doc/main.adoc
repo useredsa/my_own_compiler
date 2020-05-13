@@ -219,6 +219,7 @@ This is a usage abstraction and gives place to the concept of callable.
 Where `id`, `int_lit` and `str_lit` are identifiers, int literals and str literals
 as recognized by our lexical analyzer.
 
+%TODO Rubén, explica la semántica y que se pueden usar funciones antes de declarar y todo eso
 
 == Implementation I
 Designing a language and designing the compiler are completely different tasks.
@@ -276,6 +277,10 @@ As the complexity increases, a node can start implementing many interfaces.
 
 Our implementation uses {cpp} 17's `std::variant` to simulate the visitor design pattern.
 With this approach, an expression is one of many possibilities, instead of a base class.
+The approach is similar to using a C union but allows dynamic dispatching as a language feature
+thanks to the function `std::visit`,
+which automatically invokes the method of a callable that better suits the current object.
+
 
 .Expression definition
 [source,cpp]  
@@ -361,22 +366,239 @@ Declares the statements structures.
 
 == Implementation II
 
+
 === Name Resolution
-// Tipos de namespaces
-// RVar, RFun, RType
+
+==== Name Scopes
+Big programs consists of thousands of lines of code.
+Languages usually offer mechanisms to avoid name conflicts.
+Name scopes are an abstraction that group the names in groups,
+allowing the same name to belong to different name scopes.
+
+Name scopes usually receive a name that allows to refer to the names
+inside that name scope from a different one,
+usually by prepending the name with the namescope's name.
+
+We wanted to design a general system that would allow
+
+* Nesting of name scopes
+* Exporting an AST with unresolved names
+* Using identifiers previous to their declaration (for some use cases)
+
+Regarding the last point,
+we thought that this could be a very useful feature to allow the use of
+constants and functions previous to their definition.
+
+However, we beleived this was a feature we wouldn't like to apply to every single identifier.
+The reason is simple.
+Given the following code
+
+[source]
+----
+def f() {    // namespace of function f
+    if () {  // namespace created by a compound statement
+        a(); // unresolved name (hasn't been declared at this point)
+    }
+    int a = 3;
+}
+
+def a() {
+    
+}
+----
+
+In a typical imperative language,
+the usage of the name `a` would not point to the variable.
+Neither it would to the function,
+because it was declared afterwards,
+but we wanted to maintain the possibility of having name scopes in which
+names are not available until you define them.
+
+Our solution is creating two types of name scopes.
+
+Acronological Name Scopes::
+In acronological name scopes definitions don't follow any order.
+In an advanced system,
+this usually would imply that the compiler would not guarantee any order in the initialization.
+By definition, any definition or statement could make use of the rest of the names.
+Nested name scopes inherit all of the names declared in this name scope,
+independent of the moment where they are defined.
+Another good name for this type of name scope could be
+declaration name scope or parallel name scope.
+
+Cronological Name Scopes::
+In cronological name scopes there exists a total order between definitions.
+A definition may only use the definitions from the name scope that were defined before it.
+The compiler can guarantee the order of initialization and
+can easily resolve names during the parsing by
+maintaining a stack of active identifiers for each name.
+Another good name for this type of name scope could be
+implementation name scope or ordered name scope.
+
+Acronological name scopes can be useful for
+the global name scope,
+classes name scopes and
+some user-defined name scopes.
+Cronological name scopes can be useful for the body of
+functions,
+loop statements and
+user-defined name scopes where the order of initialization is important.
+
+The implementation inside the compiler is easy if we fix that
+acronological name scopes may only be children of an acronological name scope too.
+If this is the case the stack of active name scopes at any point in the code
+always looks as a sucession of acronological name scopes followed by a sucession of cronological.
+When a name is used, the compiler can check the active names
+and check if it references an object in a cronological name scope (which must be already defined).
+If the top active identifier with this name is not from the top acronological scope,
+an identifier in the top cronological scope is created.
+At the end of the program, an algorithm can easily alias
+identifiers in an acronological scopes which weren't defined to an identifier in a parent scope.
+This, precisely, is our implementation.
+
+=== Identifiers
+As pointed in the previous section, our design of the language means that
+the nodes in the AST cannot point directly to the objects they refer.
+The reason is, we only know the name of such an object,
+but different objects can have the same names.
+
+Names can be resolved doing a pass over the AST.
+To maintain type safety in our code,
+we followed this scheme.
+
+[frame=none,grid=none,stripes=none,options="header"]
+|===
+|Named Abstraction | Name                         | A reference to a named abstraction
+|type (`Type`)     |                              | type usage +
+                                                    (in the declaration of variables and functions)
+|variable (`Var`)  | identifier +
+     (uniquely identified by name and name scope) | var usage +
+                                                    (as an expression or as a memory location)
+|function (`Fun`)  |                              | function call (`FunCall`)
+|===
+
+and made use of the following definitions.
+
+.Named references
+[source,cpp]
+----
+union RVar {
+    identifiers::Id* id;
+    Var* var;
+
+    RVar() {  }
+    explicit RVar(identifiers::Id* id) : id(id) {  }
+};
+
+union RType {
+    identifiers::Id* id;
+    Type* ty;
+
+    RType() {  }
+    explicit RType(identifiers::Id* id) : id(id) {  }
+};
+
+union RFun {
+    identifiers::Id* id;
+    Fun* fun;
+
+    RFun() {  }
+    explicit RFun(identifiers::Id* id) : id(id) {  }
+};
+----
+
+By using unions, we incur in no extra cost in memory space.
+The AST is defined in a way that an expression or statement which uses a variable
+has a member of type `RVar` instead of a pointer to a variable object (`Var*`).
+During the name resolution pass, we change the reference to point to the object,
+whose information is has been referenced inside the `identifiers::Id` class.
+Passes that happen after the this one use this references
+as if they pointed to the named abstraction.
+
+This is only an implementation detail,
+but by using enums instead of generic pointers,
+we can benefit of type checking by the compiler and
+we can avoid coding static casts everywhere.
+In addition, it is clear from a programmer point of view that
+`RVar` is a reference to a variable object,
+whether this object is currently represented by its identifier or not.
+
+The name system is implemented in three files:
+
+https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/ast_defs.hpp[ast_defs.hpp]::
+Contains the definitions of `RType`, `RVar` and `RFun`.
+
+https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/identifiers.hpp[identifiers.hpp]::
+Contains the definitions of the `identifiers` name space
+(in the code, not in the sense of name space in the compiler).
+It defines the classes `NameScope` and `Id` and
+contains functions to add and change name scopes during the parsing.
+
+https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/id_resolution.hpp[id_resolution.hpp]::
+Contains the class in charge of performing the name resolution and updating the named references
+to point to named objects.
+We have also used this class to perform semantic checks during the pass
+that ensure the program correctness.
 
 === Semantic Checks
+//TODO rubensio
 
 === Type Handling
-// Chequeo de tipos y demás. Creación de tipos de usuario
+We designed our compiler with the idea of being able to support user-defined types.
+However, we have not had time to do so.
+
+Fortunately, we designed our compiler with two primitive types.
+This means we considered type checking in our design.
 
 === Code Generation
-
+%TODO Rubén
 
 == Conclusions
+%TODO Rubén
 
 === How to continue the project
-// Lista de ideas de cómo se puede mejorar
+Now that we have finished the project,
+we would like our teachers to consider the possibility of
+allowing future students to continue this project instead of starting from scratch.
+The design of the application could receive a few improvements which
+we have marked with `//IMPROVEMENT` comments in our source code.
+The project can also be used as a reference for future students or
+as a project skeleton after removing some parts of code.
+
+These are some of the improvements this compiler could receive
+
+Better Encapsulation::
+Although the main parts of the project remain modularized,
+we still maintain some global variables,
+like a collection of the program string literals.
+The AST's root, the struct `Prog`, could be upgraded to a class
+which would maintain this kind of state.
+State which could also be queried and modified by passes over the AST.
+
+Memory Management::
+Right now, the program relies on the AST being freed at the end of execution.
+We would encourage future contributors to
+understand and modify the code to represent memory ownership.
+
+Output Optimization::
+This would be a fresh topic,
+since we have not implemented any optimization pass.
+
+Llvm Libraries::
+We have implemented a direct translation making use of the llvm language specification.
+Instead, it would be useful to translate the program's AST to llvm's AST and make use
+of all the available libraries to optimize this code.
+
+New Features::
+And of course, complementing the language with new features is important.
+In order of importance, we miss
+
+* The ability to declare arrays
+* User declared types
+* A unique feature,
+  such as templates are for {cpp},
+  some kind of pattern matching or even
+  an inheritance system.
 
 [bibliography]
 == References
