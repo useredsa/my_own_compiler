@@ -34,3 +34,10 @@ DECLARACION/IMPLEMENTACION IDENTIFIER USE
 t_type                                t_id as a type reference
 t_function                 t_id       t_function_call
 t_var                                 t_id as a var reference
+
+
+links interesantes:
+https://www.reddit.com/r/programming/comments/mmrmj/the_expression_problem/c328mt3/
+http://wiki.c2.com/?ExpressionProblem
+https://www.reddit.com/r/cpp/comments/8po138/question_about_static_polymorphism_using/
+
