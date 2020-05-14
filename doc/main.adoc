@@ -3,7 +3,7 @@ Emilio Domínguez_Sánchez <emilio.dominugezs@um.es>; Rubén Gaspar_Marco <ruben
 v0.1, May 17, 2020: As presented to our teacher Eduardo Martínez Gracia
 :stem: latexmath
 :source-highlighter: prettify
-:toc:
+:toc: left
 
 == Introduction
 This project corresponds to the practical part of the subject "`Compiladores`" (Compilers).
@@ -988,7 +988,28 @@ Our builtin operators override this function and instead inline the code.
 
 
 == Conclusions
-%TODO Rubén
+While doing this project,
+we have obtained a fairly general view of the organization of translation programs.
+At the same time,
+we have learned the necessary techniques for solving problems that
+appear when designing a translator for a programming language,
+especially abstraction mechanisms such as the abstract syntax tree.
+
+It has also allowed us to reflect on certain characteristics of languages and
+the value of the decisions made about them.
+In particular, those related to
+the different forms of binding,
+visibility and
+scope of a variable.
+As well as the great importance of separators when carrying out
+a complete analysis of the code of a program.
+We are left with the desire to continue the project,
+because even though we had already thought of several aspects to improve and features to add,
+we ran out of time.
+Time that we have to share with other subjects and projects.
+
+All in all, we finish this project with great enthusiasm
+and we would enjoy working on something similar.
 
 === How to continue the project
 Now that we have finished the project,
