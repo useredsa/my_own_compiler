@@ -178,7 +178,7 @@ and two elements for binary operators.
     function * operator (const lhs : str, const rhs : int) : str
 ==========================
 
-==== Name scopes
+=== Name scopes
 Identifiers are declared inside name scopes.
 You can define the same name more than once as long as you do it in different scopes.
 
@@ -190,6 +190,8 @@ A function declaration introduces a new name scope as a child of the global name
 The function arguments and declarations belong to the child scope.
 In contrast to the global name scope, functions name scopes are cronological.
 This means that a name must be defined before using it.
+
+// Constants only admits integer literals
 
 
 == Language and Tools
@@ -225,8 +227,8 @@ Expression:: Typically, statements take parameters,
 and these paramenters are usually expressions.
 For example, you can assign a variable a literal value or the sum of two variables.
 Both would be valid expressions (for the assignment value).
-Function:: A function is a set of statements that can be invoked other parts of the program.
-Variable:: A variable is a abstract entity that holds a value which can used (as an expression)
+Function:: A function is a set of statements that can be invoked in other parts of the program.
+Variable:: A variable is an abstract entity that holds a value which can used (as an expression)
 in statements and can also be modified trough some statements (like assignment).
 
 === Abstraction
@@ -769,9 +771,9 @@ In respect of the statements, we have these error rules:
 
 The second one allow us to discard incorrect statements
 (and report all of them thanks to `yyerrok`)
-until the first valid statement is found,
-and the first one parses invalid tokens until the lookahead token is the semicolon token,
-moment when the parses shifts the semicolon in rule
+until the first valid statement is found.
+The first one parses invalid tokens until the lookahead token is the semicolon token,
+then, the parser shifts the semicolon in rule
 
     statement:
         semcolon_sep_stmts_ ";" {yyerrok;} statement
@@ -790,9 +792,7 @@ so we introduce a new rule for the symbol `compound_statement`
 In fact, this is also a strategy for the panic mode recovery,
 it consists in recover to the matching close-delimiter of
 an opening-delimiter that has already been parsed.
-We do this everytime an opening-bracket is parsed in a statement or in a expression,
-and we insert instances of the special classes `ast::EmptyStmt` and `ast::NoExp` respectively,
-to maintain consistency in the AST.
+We do this everytime an opening-bracket is parsed in a statement or in a expression.
 
 The last error rule is the one in symbol `rtype`:
 
@@ -808,7 +808,7 @@ As we can see, our grammar accept any token
 (in fact, accept the token error,
 discarding the unexpected lookahead token with the macro `yyclearin`)
 besides the expected tokens "int" and "str"
-by inserting a reference to the type explicitly defined for error cases `ErrorType`.
+by inserting a reference to a type explicitly defined for error cases.
 When user-defined types are implemented,
 this rule will not be necessary because instead,
 the semantic phase would be responsible of checking that the identifier referenced belongs to a type.
@@ -825,16 +825,23 @@ but we have to wait until we have our AST complete to do other kinds of checking
 As we said before, we have both cronological and acronological name scopes,
 so we can't check if an indentifier is undeclared until the symbol table is complete.
 Once all the identifiers have been registered,
-we bind all the references that share a name in the `FirstPass()` method and if,
-given an identifier, we cannot determine what object does it refer to (i.e. there is no object defined with that id in this scope or in a superior one), we report that as an unresolved identifier.
+we bind all the references that share a name in a first pass through the symbol table and if,
+given an identifier, we cannot determine what object does it refer to (i.e. there is no object defined with that id in this scope or in a superior one),
+we report that as an unresolved identifier.
 
 * Repeated functions:
 +
-Due to function overloading, we cannot know if a function is being redefined only because of his name. Instead, we have to check the types of his argument to do so. This, together with the fact that references to types are not resolved yet, is why we need to check this in an independent pass through the complete AST in the `SecondPass()` method.
+Due to function overloading, we cannot know if a function is being redefined only because of his name.
+Instead, we have to check the types of his argument to do so.
+This, together with the fact that references to types are not resolved yet, is why we need to check this in an independent second pass through the symbol table.
 
 * Usage of objects and type checking:
 +
-Obviously, we cannot check if an object is being correctly used until all identifiers are resolved, because we can only know how the object is going to be used trough the references that refers to it. So, once all the identifiers have been resolved in the `FirstPass()`, we can check if they are being well used, i.e. if the object they refer to is intended to use it the way that the expression on which the identifier appears tries to. We do this through a visitor named `name_resolver`, that "visit" all the nodes of the AST checking some typical semantic information:
+Obviously, we cannot check if an object is being correctly used until all identifiers are resolved,
+because we can only know how the object is going to be used through the references that refers to it.
+So, once all the identifiers have been resolved,
+we can check if the object they refer to is intended to use it the way that the expression on which the identifier appears tries to.
+We do this through a visitor named `name_resolver`, that pass through all the AST checking some typical semantic information:
 
 ** identifiers used as variables (types) effectively refers to variables (types).
 
@@ -846,23 +853,134 @@ Obviously, we cannot check if an object is being correctly used until all identi
 
 ** arguments of write and read are primitive types (the only ones that are printable so far).
 
-** given a list of arguments for a function name, it exists a function with that name and with the types in its parameters in the same order and content that the types of the arguments given. As we treat operators the same way as functions, for both cases we use the function `FromFunSig` to get the overload resolution done, i.e. obtain the object given the parameters and the id/operator.
+** given a list of arguments for a function name,
+it exists a function with that name and with the types in its parameters in the same order and content that the types of the arguments given.
+As we treat operators the same way as functions,
+for both cases we use the same method to get the overload resolution done,
+i.e. obtain the object given the parameters and the id/operator.
 
 === Code Generation
-Once we have checked all the possible errors in the input code, we generate the code if there's no error, taking advantage of all the AST treatments that has been made in the process. This is, all the nodes that represented references to objects are now actually references to those objects.
+Once we have checked all the possible errors in the input code, and provided that there is no error,
+we generate the code taking advantage of the name resolution that has been done while looking for errors.
+This is, all the nodes that represented references to objects are now actually references to those objects.
 
-With the AST ready, we use another visitor named `translator` to generate the LLVM code of the program represented by the AST, so each node corresponds to a little piece of code that is written through a given `std::ostream`. This visitor is defined in he file https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/llvm.hpp[llvm.hpp] but let's see a few details:
+With the AST ready, we use another visitor named `translator` to generate the LLVM code of the program represented by the AST,
+so each node corresponds to a little piece of code that is written through a given `std::ostream`.
+This visitor is defined in he file https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/llvm.hpp[llvm.hpp] but let's see a few details:
 
 ==== Main statements as a function
 %TODO
 
-==== String literals
+==== Data segment
+%TODO?
+
+==== C stdin library
 %TODO
 
-==== Local variables allocation
-Every time a variable is declared, we need to allocate memory for it. To allocate memory on the stack frame of the currently executing function we use the https://llvm.org/docs/LangRef.html#alloca-instruction[`alloca`] instruction. This memory is released when the function where the instruction is called returns to its caller. `EasyAlloca` is the method in charge of generate this instruction given a pointer to an object of class Var.
+==== String literals
+%TODO
+|===
+| str_lit
+| `getelementptr inbounds ([` str_lit_len ` x i8], [` str_lit_len ` x i8]* ` str_lit_llvm_id `, i32 0, i32 0)`
+|===
 
-%TODO Rubén
+==== Declaration translation
+Every time a variable is declared, we need to allocate memory for it.
+To allocate memory on the stack frame of the currently executing function we use the https://llvm.org/docs/LangRef.html#alloca-instruction[`alloca`] instruction.
+This memory is released when the function where the instruction is called returns to its caller.
+//TODO Alignment?
+Once we have the instructions to allocate the memory, we get the declarations translated like this:
+[frame=none, grid=none, stripes=none, cols="2"]
+|===
+| `var` id `:` type
+| `%` id `= alloca` type_llvm_name `, align` type_def_alignment 
+|===
+code for initialization is the same as in assignment,
+so it is not worthwhile to show that here.
+
+==== Statement translation
+Each time we have an assignment or similar (variable and argument initializations or increment the for-statement control variable) we have to be able to store data.
+//since we want the data to be preserved between function calls.
+//TODO En realidad ni siquiera sé si las variables locales se preservan entre llamadas o no en llvm
+The llvm instruction to do this is 
+https://llvm.org/docs/LangRef.html#store-instruction[`store`].
+
+The assignment, if, while and for statements are translated as follows:
+[frame=none, grid=none, stripes=none, cols="2"]
+|===
+| id `:=` exp
+| code for exp +
+  `store` type_llvm_name exp_value `,` type_llvm_name `*` `%` id `, align` type_def_alignment
+
+| `if` cond `then` +
+  statement1 +
+  else +
+  statement2  
+| code for cond +
+  temp_var `= icmp ne i32` cond_value `, 0` +
+  `br i1` temp_var `, label` then_label `, label` else_label +
+  then_label `:` +
+  code for statement1 +
+  `br label` fi_label +
+  else_label `:` +
+  code for statement2 +
+  `br label` fi_label +
+  fi_label `:`
+
+| `while` cond `do` +
+  statement
+| `br label` comp_label +
+  comp_label `:` +
+  code for cond +
+  temp_var `= icmp ne i32` cond_value `, 0` +
+  `br i1` temp_var `, label` loop_label `, label` afterwhile_label +
+  loop_label `:` +
+  code for statement +
+  `br label` comp_label +
+  afterwhile `:`
+
+| `for` id `:=` start_exp `to` end_exp `do` +
+  statement
+| code for start_exp +
+  `store i32` start_exp_value `, i32*` `%` id `, align 4` +
+  `br label` comp_label +
+  comp_label `:` +
+  code for end_exp +
+  code for id +
+  temp_var `= icmp ne i32` end_exp_value `,` id_value +
+  `br i1` temp_var `, label` loop_label `, label` afterfor_label +
+  loop_label `:` +
+  //TODO increment id by adding to the temporary var?
+  `br label` comp_label +
+  afterfor_label `:`
+|===
+%TODO Explicar los nombres de las variables y las etiquetas
+https://llvm.org/docs/LangRef.html#identifiers[llvm identifiers]
+
+===== write and read statements
+%TODO
+
+==== Expression translation
+|===
+| exp1 op exp2
+| code for exp1 +
+  code for exp2 +
+  code for operator
+
+| op exp
+| code for exp +
+  code for operator
+
+| id
+| id_val `= load` type_llvm_name `, ` type_llvm_name `*` `%` id `, align` type_def_alignment
+
+| id `(` exp1 `,` exp2 ... `)`
+| code for expressions +
+  call_val `=` return_type_llvm_name `@` id `(` exp1_type_llvm_name exp1_val `,` exp2_type_llvm_name ... `)`
+|===
+
+===== Operator calls
+
 
 == Conclusions
 %TODO Rubén
