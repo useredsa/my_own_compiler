@@ -104,7 +104,7 @@ read                            return yy::parser::token::READ;
                                   }
                                 }
 <STRING_ESCAPE_COND>"\\"        strlit->push_back('\\'), BEGIN(STRING_COND);
-<STRING_ESCAPE_COND>"\""        strlit->append("''"), BEGIN(STRING_COND);
+<STRING_ESCAPE_COND>"\""        strlit->push_back('"'), BEGIN(STRING_COND);
 <STRING_ESCAPE_COND>"t"         strlit->push_back('\t'), BEGIN(STRING_COND);
 <STRING_ESCAPE_COND>"r"         strlit->push_back('\r'), BEGIN(STRING_COND);
 <STRING_ESCAPE_COND>"n"         strlit->push_back('\n'), BEGIN(STRING_COND);

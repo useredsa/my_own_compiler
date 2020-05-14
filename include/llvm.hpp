@@ -68,13 +68,7 @@ class Translator {
     /**
      * @brief Outputs as global variables the program's str literals
      */
-    void LlvmPutStrLits() {
-        for (ast::StrLit* str_lit : ast::program_str_lits) {
-            os << str_lit->llvm_id << " = private unnamed_addr constant ["
-               << str_lit->lit->size()+1 << " x i8] c\"" << *str_lit->lit
-               << "\\00\", align 1\n";
-        }
-    }
+    void LlvmPutStrLits();
 
   private:
     std::ostream& os;

@@ -90,6 +90,24 @@ void Translator::Output(Prog* prog) {
     os << "declare i8* @strcpy(i8*, i8*)\n";
 }
 
+void Translator::LlvmPutStrLits() {
+    for (ast::StrLit* str_lit : ast::program_str_lits) {
+        os << str_lit->llvm_id << " = private unnamed_addr constant ["
+           << str_lit->lit->size()+1 << " x i8] c\"";
+        auto flags = os.flags();
+        for (char c : *str_lit->lit) {
+            if (isprint(c) and c != '"') {
+                os.flags(flags);
+                os << c;
+            } else {
+                os << "\\" << std::hex << std::setw(2) << std::setfill('0') << (c & 0xFF);
+            }
+        }
+        os.flags(flags);
+        os << "\\00\", align 1\n";
+    }
+}
+
 void Translator::Output(Fun* fun) {
     os << "; Function\n";
     os << "define " << fun->rtype().ty->llvm_name() << " @" << fun->llvm_name() << "(";
