@@ -1,9 +1,15 @@
 = Compiler Design and Implementation
 Emilio Domínguez_Sánchez <emilio.dominugezs@um.es>; Rubén Gaspar_Marco <ruben.gasparm@um.es>
-v0.1, May 17, 2020: As presented to our teacher Eduardo Martínez Gracia
+v0.1, May 17, 2020: As presented to our professor Eduardo Martínez Gracia
 :stem: latexmath
 :source-highlighter: prettify
 :toc: left
+
+[dedication]
+== Acknowledgements
+We wish to thank Eduardo Martínez Gracia,
+university professor at the University of Murcia,
+for his help and his guidance in this project.
 
 == Introduction
 This project corresponds to the practical part of the subject "`Compiladores`" (Compilers).
@@ -32,15 +38,13 @@ We decided we wanted to focus on this project and implement a language with more
 ** Nested name scopes
 ** Chronological name scopes which enforce the declaration of a name before its use
 ** Achronological name scopes which don't
-* Return statement
 * Operator and function overloading
 * Llvm output
 
 
 We have spent most of the time learning and implementing a good system.
 Our focus has always been extensibility.
-The time we can dedicate to this subject is limited,
-but we were always thinking
+We were always thinking
 _"`If we were to implement this feature from language X,
 would it be easy with the code as is right now?`"_.
 This document serves the purpose of describing our work and
@@ -53,8 +57,7 @@ our view on the code structure of a compiler.
 As this is a project meant for learning,
 there is no real reasoning behind supporting some features and leaving behind others.
 Our major constraint has been time,
-which we have mostly devoted the name system and
-follow a good code structure and design.
+which we have mostly devoted the name system.
 
 === Language Grammar in BNF format
 :lambda: &lambda;
@@ -248,7 +251,7 @@ The reason is that a function can take a constant reference to a variable as a p
 which means that the address of memory associated with that variable can be read inside the
 function by means of using the variable name,
 but the compiler ensures that the variable is not modified,
-even though the variable wasn't declared as `const` in the function that called it,
+even if the variable was not declared as `const` in the function that called it,
 the same address of memory could be modified there.
 
 As another example, expressions can be thought of as statements.
@@ -440,7 +443,7 @@ Declares the statements structures.
 ==== Name Scopes
 Big programs consists of thousands of lines of code.
 Languages usually offer mechanisms to avoid name conflicts.
-Name scopes are an abstraction that group the names in groups,
+Name scopes are an abstraction that group the names,
 allowing the same name to belong to different name scopes.
 
 Name scopes usually receive a name that allows to refer to the names
@@ -518,9 +521,9 @@ If this is the case the stack of active name scopes at any point in the code
 always looks as a sucession of acronological name scopes followed by a sucession of cronological.
 When a name is used, the compiler can check the active names
 and check if it references an object in a cronological name scope (which must be already defined).
-If the top active identifier with this name is not from the top acronological scope,
-an identifier in the top cronological scope is created.
-At the end of the program, an algorithm can easily alias
+If the top active identifier with this name is not above the top acronological scope,
+an identifier in the top acronological scope is created.
+At the end of the program, an algorithm can easily redirect
 identifiers in an acronological scopes which weren't defined to an identifier in a parent scope.
 This, precisely, is our implementation.
 
@@ -579,14 +582,15 @@ By using unions, we incur in no extra cost in memory space.
 The AST is defined in a way that an expression or statement which uses a variable
 has a member of type `RVar` instead of a pointer to a variable object (`Var*`).
 During the name resolution pass, we change the reference to point to the object,
-whose information is has been referenced inside the `identifiers::Id` class.
+whose information has been referenced inside the `identifiers::Id` class
+at the moment of definition.
 Passes that happen after this one use this references
 as if they pointed to the named abstraction.
 
 This is only an implementation detail,
 but by using enums instead of generic pointers,
 we can benefit of type checking by the compiler and
-we can avoid coding static casts everywhere.
+we avoid coding static casts everywhere.
 In addition, it is clear from a programmer point of view that
 `RVar` is a reference to a variable object,
 whether this object is currently represented by its identifier or not.
@@ -598,7 +602,7 @@ Contains the definitions of `RType`, `RVar` and `RFun`.
 
 https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/identifiers.hpp[identifiers.hpp]::
 Contains the definitions of the `identifiers` name space
-(in the code, not in the sense of name space in the compiler).
+(in the code, not in the sense of name scope in the compiler).
 It defines the classes `NameScope` and `Id` and
 contains functions to add and change name scopes during the parsing.
 
@@ -640,7 +644,9 @@ the start condition named "sc".
 More in http://dinosaur.compilertools.net/flex/flex_11.html
 
 * Exceeding length of identifiers or literals
-+ There is a limit to how long the identifiers and the literals can be.
++
+There is a limit to how long the identifiers and the literals can be.
+
 ** String literals
 +
 In this case, each time we scan a new character to be added to the string,
@@ -702,7 +708,7 @@ but also to detect the innecessary presence of them,
 as in the case of the semicolon after the last statement in a compound statement.
 As an improvement of the compiler,
 we could add more of these rules to
-produce the error related to the absence of the `"begin"` token in the compound_statement symbol,
+produce the error related to the absence of the `"begin"` token in the `compound_statement` symbol,
 mismatched brackets, etc.
 
 ===== Panic mode recovery
@@ -774,7 +780,7 @@ In respect of the statements, we have these error rules:
 
 [source,bison]
 ----
-stateent:
+statement:
     ...
     |
     semcolon_sep_stmts_ error
@@ -827,10 +833,7 @@ rtype:
     }
 ----
 
-As we can see, our grammar accept any token
-(in fact, accept the token error,
-discarding the unexpected lookahead token with the macro `yyclearin`)
-besides the expected tokens "int" and "str"
+As we can see, our grammar accepts any token besides the expected tokens "int" and "str"
 by inserting a reference to a type explicitly defined for error cases.
 When user-defined types are implemented,
 this rule will not be necessary because instead,
@@ -958,7 +961,7 @@ The assignment, if, while and for statements are translated as follows:
   afterfor_label `:`
 |===
 
-===== write and read statements
+==== Write and read statements
 Write and read statements make use of C's `stdio` library.
 
 ==== Expression translation
