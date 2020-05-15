@@ -14,3 +14,4 @@ build/*
 
 # docs
 *.html
+*.tar.gz

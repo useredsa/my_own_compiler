@@ -85,6 +85,10 @@ tidy:
 		clang-tidy $$src -format-style=google -checks={bugprone-*,cert-*,clang-analyzer-*,cppcoreguidelines-*,-cppcoreguidelines-pro-type-union-access,google-*,misc-*,modernize-*,performance-*,portability-*,readibility-*} -- $(CXXFLAGS) $(INC) ; \
 	done
 
+tar:
+	rm MiniPascalCompiler.tar.gz
+	tar cvzf MiniPascalCompiler.tar.gz include/* src/* doc/* bin/mpc tests/*.mp lexicon.ll syntax.yy Makefile
+
 run: $(TARGET)
 	./$(TARGET) $(FILE) -o bin/a.llvm
 	cat bin/a.llvm
