@@ -8,7 +8,7 @@ v0.1, May 17, 2020: As presented to our professor Eduardo Martínez Gracia
 [dedication]
 == Acknowledgements
 We wish to thank Eduardo Martínez Gracia,
-university professor at the University of Murcia,
+professor at the University of Murcia,
 for his help and his guidance in this project.
 
 == Introduction
