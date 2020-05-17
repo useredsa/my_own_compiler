@@ -4,6 +4,7 @@ v0.1, May 17, 2020: As presented to our professor Eduardo Martínez Gracia
 :stem: latexmath
 :source-highlighter: prettify
 :toc: left
+:showtitle:
 
 [dedication]
 == Acknowledgements
