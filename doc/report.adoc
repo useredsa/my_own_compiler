@@ -3,8 +3,25 @@ Emilio Domínguez_Sánchez <emilio.dominugezs@um.es>; Rubén Gaspar_Marco <ruben
 v0.1, May 17, 2020: As presented to our professor Eduardo Martínez Gracia
 :stem: latexmath
 :source-highlighter: prettify
+ifeval::["{backend}" == "html5"]
 :toc: left
-:showtitle:
+ifdef::embedded[]
+:toc: macro
+endif::[]
+endif::[]
+ifeval::["{backend}" != "html5"]
+:toc: auto
+endif::[]
+
+// Include "Title" (as section), author and revision for embedded display
+ifdef::embedded[]
+[pass,subs=normal]
+== {doctitle}
+{authors} -- Version {revnumber}, {revdate} | {revremark}
+
+---
+toc::[]
+endif::[]
 
 [dedication]
 == Acknowledgements
