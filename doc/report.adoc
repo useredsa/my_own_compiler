@@ -1,6 +1,6 @@
 = Compiler Design and Implementation
 Emilio Domínguez_Sánchez <emilio.dominugezs@um.es>; Rubén Gaspar_Marco <ruben.gasparm@um.es>
-v0.1, May 17, 2020: As presented to our professor Eduardo Martínez Gracia
+v1.0, May 17, 2020: As presented to our professor Eduardo Martínez Gracia
 :stem: latexmath
 :source-highlighter: prettify
 ifeval::["{backend}" == "html5"]
@@ -458,11 +458,11 @@ flow control directives
 (loops, conditional statements and branching statements) and
 function invocations are all statements with their own syntax.
 Expression:: Typically, statements take parameters,
-and these paramenters are usually expressions.
+and these parameters are usually expressions.
 For example, you can assign a variable a literal value or the sum of two variables.
 Both would be valid expressions (for the assignment value).
 Function:: A function is a set of statements that can be invoked in other parts of the program.
-Variable:: A variable is an abstract entity that holds a value which can used (as an expression)
+Variable:: A variable is an abstract entity that holds a value which can be used (as an expression)
 in statements and can also be modified trough some statements (like assignment).
 
 === Abstraction
@@ -490,7 +490,7 @@ As another example, expressions can be thought of as statements.
 The reason is that in some languages they can modify the state of the computer,
 just as statements.
 In general, a statement could be thought as an expression which doesn't return a result,
-or expressions could be the statements that did return a result.
+or expressions could be statements that did return a result.
 In the Lisp family of languages, every statement returns a value that can be used for
 another statement. Therefore, there is not a distinction between the two.
 We can also shorten the distance between expressions and statements by making the return
@@ -575,7 +575,7 @@ Even in a small compiler you would need to implement 3 to 5 virtual functions
 for each node of the AST.
 This results in code with the same purpose being dispersed along multiple files.
 
-In addition, declaring an interface for what functions does an expression allow
+In addition, declaring interfaces for the different types of nodes, such as expressions,
 does not scale properly.
 As the complexity increases, a node can start implementing many interfaces.
 
@@ -756,7 +756,7 @@ and check if it references an object in a cronological name scope (which must be
 If the top active identifier with this name is not above the top acronological scope,
 an identifier in the top acronological scope is created.
 At the end of the program, an algorithm can easily redirect
-identifiers in an acronological scopes which weren't defined to an identifier in a parent scope.
+identifiers in acronological scopes which weren't defined to an identifier in a parent scope.
 This, precisely, is our implementation.
 
 === Identifiers
@@ -820,7 +820,7 @@ Passes that happen after this one use this references
 as if they pointed to the named abstraction.
 
 This is only an implementation detail,
-but by using enums instead of generic pointers,
+but by using unions instead of generic pointers,
 we can benefit of type checking by the compiler and
 we avoid coding static casts everywhere.
 In addition, it is clear from a programmer point of view that
@@ -1071,7 +1071,7 @@ When user-defined types are implemented,
 this rule will not be necessary because instead,
 the semantic phase would be responsible of checking that the identifier referenced belongs to a type.
 
-==== Semantic Rhase
+==== Semantic Phase
 While building the AST, we can detect the redefinition of an object by
 simply checking our symbol table `name_table` in pursuit of already defined objects
 with that identifier in the same scope,
@@ -1100,7 +1100,7 @@ is why we need to check this in an independent second pass through the symbol ta
 Obviously, we cannot check if an object is being correctly used until all identifiers are resolved,
 because we can only know how the object is going to be used through the references that refers to it.
 Hence, once all the identifiers have been resolved,
-we can check if the object they refer to is intended to use it the way
+we can check if the object they refer to is intended to be used the way
 that the expression tries to.
 We do this through a visitor named 
 https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/id_resolution.hpp[`name_resolver`],
@@ -1131,7 +1131,7 @@ With the AST ready, we use another visitor named
 https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/src/llvm.cpp[`translator`]
 to generate the LLVM code of the program represented by the AST,
 so each node corresponds to a little piece of code that is written through a given `std::ostream`.
-This visitor is defined in he file https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/llvm.hpp[llvm.hpp].
+This visitor is defined in the file https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/llvm.hpp[llvm.hpp].
 
 ==== Declaration Translation
 The grammar for our language doesn't allow to declare global variables.
@@ -1175,7 +1175,7 @@ The assignment, if, while and for statements are translated as follows:
   loop_label `:` +
   code for statement +
   `br label` comp_label +
-  afterwhile `:`
+  afterwhile_label `:`
 
 | `for` id `:=` start_exp `to` end_exp `do` +
   statement
@@ -1188,6 +1188,7 @@ The assignment, if, while and for statements are translated as follows:
   temp_var `= icmp ne i32` end_exp_value `,` id_value +
   `br i1` temp_var `, label` loop_label `, label` afterfor_label +
   loop_label `:` +
+  code for statement +
   id increment +
   `br label` comp_label +
   afterfor_label `:`
