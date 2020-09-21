@@ -3,25 +3,7 @@ Emilio Domínguez_Sánchez <emilio.dominugezs@um.es>; Rubén Gaspar_Marco <ruben
 v1.0, May 17, 2020: As presented to our professor Eduardo Martínez Gracia
 :stem: latexmath
 :source-highlighter: prettify
-ifeval::["{backend}" == "html5"]
 :toc: left
-ifdef::embedded[]
-:toc: macro
-endif::[]
-endif::[]
-ifeval::["{backend}" != "html5"]
-:toc: auto
-endif::[]
-
-// Include "Title" (as section), author and revision for embedded display
-ifdef::embedded[]
-[pass,subs=normal]
-== {doctitle}
-{authors} -- Version {revnumber}, {revdate} | {revremark}
-
----
-toc::[]
-endif::[]
 
 [dedication]
 == Acknowledgements
@@ -194,7 +176,7 @@ Like any other function, operators are not restricted in the return type
 but they must specify a parameter list with only one element for unary operators
 and two elements for binary operators.
 
-.Example of operator overloading (https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master//tests/example_program5.mp[example_program5.mp])
+.Example of operator overloading (https://github.com/useredsa/my_own_compiler/blob/master//tests/example_program5.mp[example_program5.mp])
 [source,pascal]
 ----
 function * operator (const lhs : str, const rhs : int) : str
@@ -649,13 +631,13 @@ over plainly ASTs defined by the programmer.
 === The Abstract Syntax Tree
 The definition of the whole AST is divided in four files.
 
-https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/ast_defs.hpp[ast_defs.hpp]::
+https://github.com/useredsa/my_own_compiler/blob/master/include/ast_defs.hpp[ast_defs.hpp]::
 Contains the basic definitions of the AST.
 It contains the supported operators,
 the variant expression (`Exp`) and
 the variant statement (`Stmt`).
 
-https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/ast.hpp[ast.hpp]::
+https://github.com/useredsa/my_own_compiler/blob/master/include/ast.hpp[ast.hpp]::
 Contains the AST classes which are objects in the language and have a detailed description
 of their implementation as declared by the programmer.
 +
@@ -664,10 +646,10 @@ We have also considered a good choice to inherit from these classes,
 because in this case the class polymorphism was beneficial.
 For example, our builtin operators inherit from `Fun`, the class that represents a function.
 
-https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/expressions.hpp[expressions.hpp]::
+https://github.com/useredsa/my_own_compiler/blob/master/include/expressions.hpp[expressions.hpp]::
 Declares the expression nodes.
 
-https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/statements.hpp[statements.hpp]::
+https://github.com/useredsa/my_own_compiler/blob/master/include/statements.hpp[statements.hpp]::
 Declares the statements structures.
 
 === Name Resolution
@@ -829,16 +811,16 @@ whether this object is currently represented by its identifier or not.
 
 The name system is implemented in three files:
 
-https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/ast_defs.hpp[ast_defs.hpp]::
+https://github.com/useredsa/my_own_compiler/blob/master/include/ast_defs.hpp[ast_defs.hpp]::
 Contains the definitions of `RType`, `RVar` and `RFun`.
 
-https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/identifiers.hpp[identifiers.hpp]::
+https://github.com/useredsa/my_own_compiler/blob/master/include/identifiers.hpp[identifiers.hpp]::
 Contains the definitions of the `identifiers` name space
 (in the code, not in the sense of name scope in the compiler).
 It defines the classes `NameScope` and `Id` and
 contains functions to add and change name scopes during the parsing.
 
-https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/id_resolution.hpp[id_resolution.hpp]::
+https://github.com/useredsa/my_own_compiler/blob/master/include/id_resolution.hpp[id_resolution.hpp]::
 Contains the class in charge of performing the name resolution and updating the named references
 to point to named objects.
 We have also used this class to perform semantic checks during the pass
@@ -956,7 +938,7 @@ only after three consecutive input tokens have been successfully shifted will er
 You can make error messages resume immediately by using the macro `yyerrok` in an action. 
 
 Now let's take a closer look at the error rules in
-https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/syntax.yy[syntax.yy],
+https://github.com/useredsa/my_own_compiler/blob/master/syntax.yy[syntax.yy],
 from top to bottom.
 The first error rule appearing is related to an error in the program header the program symbol
 
@@ -1103,7 +1085,7 @@ Hence, once all the identifiers have been resolved,
 we can check if the object they refer to is intended to be used the way
 that the expression tries to.
 We do this through a visitor named 
-https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/id_resolution.hpp[`name_resolver`],
+https://github.com/useredsa/my_own_compiler/blob/master/include/id_resolution.hpp[`name_resolver`],
 that passes through all the AST checking some typical semantic information:
 
 ** identifiers used as variables (types) effectively refer to variables (types).
@@ -1128,10 +1110,10 @@ we generate the code taking advantage of the name resolution that has been done 
 This is, all the nodes that represented references to objects are now actually references to those objects.
 
 With the AST ready, we use another visitor named
-https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/src/llvm.cpp[`translator`]
+https://github.com/useredsa/my_own_compiler/blob/master/src/llvm.cpp[`translator`]
 to generate the LLVM code of the program represented by the AST,
 so each node corresponds to a little piece of code that is written through a given `std::ostream`.
-This visitor is defined in the file https://github.com/Rvb0rob0t/miniPascal_compiler/blob/master/include/llvm.hpp[llvm.hpp].
+This visitor is defined in the file https://github.com/useredsa/my_own_compiler/blob/master/include/llvm.hpp[llvm.hpp].
 
 ==== Declaration Translation
 The grammar for our language doesn't allow to declare global variables.
